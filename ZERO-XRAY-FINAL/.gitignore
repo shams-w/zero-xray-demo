@@ -1,0 +1,43 @@
+# ZERO X-RAY -- delivery/version-control exclusions.
+# Keep source, config, tests, and docs. Exclude anything regenerable,
+# local-only, or that could contain runtime/demo data or secrets.
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+server/.venv/
+
+# --- Node / frontend build ---
+node_modules/
+client/node_modules/
+client/dist/
+client/.vite/
+npm-debug.log*
+
+# --- Local runtime data (never ship real/demo runtime state) ---
+server/data/runtime.db
+server/data/tenant_files/*
+!server/data/tenant_files/.gitkeep
+DATABASE_VIEW_SNAPSHOT/
+
+# --- Logs ---
+*.log
+/tmp/*.log
+
+# --- Environment / secrets ---
+.env
+.env.local
+.env.*.local
+# .env.example is intentionally NOT ignored -- it is a template with
+# no real values and should stay in the delivery.
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

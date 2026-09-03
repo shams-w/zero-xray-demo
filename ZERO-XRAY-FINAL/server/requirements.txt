@@ -1,0 +1,15 @@
+fastapi
+httpx
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+python-multipart
+langgraph
+langchain-core
+PyMuPDF
+requests
+PyJWT[crypto]
+psycopg[binary]>=3.1
+numpy
+PyYAML>=6.0

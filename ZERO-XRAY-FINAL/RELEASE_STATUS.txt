@@ -1,0 +1,24 @@
+ZERO X-RAY
+Release Status: READY FOR CONTROLLED PILOT
+
+Verified:
+
+* Agent grounding
+* Capability metrics
+* Traceability
+* Grounded Test Agent
+* Publish lifecycle
+* Subscription enforcement/reactivation
+* Agent comparison readiness
+* Multi-tenant/RBAC isolation
+* Secret exposure checks
+* Frontend production build
+
+Known limitations:
+
+* Future-step to Integration matching currently relies on name/type textual overlap.
+* Current Journey lacks equivalent structured step classification for reliable customer-step reduction.
+* Automatic Data Fetching requires structured operation metadata for full verification.
+* Transaction Execution requires structured executable-operation metadata for full verification.
+* Real production APIs, credentials, payment providers, and production deployment have not been exercised.
+* 10 known pre-existing /api/journeys test-fixture failures remain and were confirmed unrelated to Phases 2-8.

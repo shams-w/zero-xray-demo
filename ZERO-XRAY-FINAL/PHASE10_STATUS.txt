@@ -1,0 +1,33 @@
+ZERO X-RAY — Phase 10 OpenAPI / Swagger Import
+
+Implementation status: IMPLEMENTED — VALIDATION CANDIDATE
+Base package status before Phase 10: READY FOR CONTROLLED PILOT
+
+Implemented:
+- Paste direct OpenAPI JSON/YAML URL or Swagger UI URL
+- Server-side safe discovery/import
+- OpenAPI 3.x + Swagger 2.0 structural parsing
+- SSRF validation, bounded redirects, timeout, size cap
+- Tenant/service-scoped OpenAPI source + API operation registry
+- Preserve CONNECTED / SANDBOX / NOT_CONNECTED semantics
+- Link imported Integration to selected Service
+- Conservative structured operation matching before legacy fallback
+- Safe operation traceability in Agent capability map
+- Discovered operations are provided to the existing Analyze flow
+- One-click Import API & Build Agent for users with Analyze permission
+- Test Agent receives the same mapped_integration structure through the existing grounded plan path
+- Manual Integrations remain supported
+- OpenAPI refresh preserves parent Integration identity/status/secret_reference
+
+Validation completed in this environment:
+- Python compileall: PASS
+- Phase 10 focused unit tests: 26 passed
+- Swagger UI -> relative swagger.json discovery smoke test: PASS
+- JSX/JS syntax parsing with TypeScript parser: PASS
+
+Validation not runnable in this container:
+- Full backend regression, because the extracted clean package does not include installed Python dependencies such as langgraph and network installation is unavailable.
+- Frontend Vite production build, because node_modules is intentionally absent and network installation is unavailable.
+
+Important execution boundary:
+OpenAPI import is discovery/grounding only. Phase 10 does NOT add unrestricted real production API execution. Real external calls still require a verified adapter/provider, production credentials, and existing execution security gates.

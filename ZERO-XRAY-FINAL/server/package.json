@@ -1,0 +1,15 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "Convenience aliases for the ZERO X-RAY FastAPI backend",
+  "private": true,
+  "scripts": {
+    "test": "python -m unittest discover -s tests -v",
+    "dev": "python -m uvicorn main:app --reload --port 8000",
+    "start": "python -m uvicorn main:app --host 127.0.0.1 --port 8000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

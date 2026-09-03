@@ -1,0 +1,22 @@
+PHASE 10 OPENAPI AGENT MAPPING FIX
+
+Scope: mapping only. No unrelated product logic changed.
+
+Changed:
+- server/core/agent_capability_mapper.py
+- server/main.py (passes service name/description as mapping context)
+- server/tests/test_openapi_import_phase10_unit.py (additive mapping tests)
+
+What the fix does:
+- Maps outcome-language Agent steps to imported OpenAPI operations using conservative bilingual capability concepts.
+- Uses service context only to disambiguate operations (for example Rent/Rental vs Renewal).
+- Prevents Rent services from silently binding to Renewal endpoints and vice versa.
+- Keeps no-match behavior as INTEGRATION_REQUIRED; it never invents endpoints.
+- Preserves exact imported method/path/operationId in mapped_integration.operation.
+
+Focused validation:
+- test_openapi_import_phase10_unit.py: 31 passed.
+- Python syntax compilation passed.
+
+Environment limitation:
+- Broader backend suite could not be collected in this container because langgraph is not installed.

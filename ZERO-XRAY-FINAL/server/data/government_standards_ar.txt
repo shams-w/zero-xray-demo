@@ -1,0 +1,173 @@
+================================================================================
+GOVERNMENT AI ASSISTANT SERVICE DESIGN STANDARDS
+دليل تصميم تجارب الخدمات الحكومية بالذكاء الاصطناعي المساعد
+Source: https://uaemodel.egsep.ae/agentic_ai_guide_website.html
+================================================================================
+
+1. DEFINITION OF AGENTIC AI (مفهوم الذكاء الاصطناعي المساعد)
+نظام قادر على فهم الطلبات وتحليل المعلومات، وتنفيذ المهام بصورة مستقلة، نيابة عن المستخدم أو أي نظام آخر، من خلال تحديد مسار عمله بنفسه واستخدام الأدوات المتاحة لتحقيق الهدف المطلوب.
+A system capable of understanding requests, analyzing information, and autonomously executing tasks on behalf of the user or another system, by self-determining its path of action and using available tools to achieve the intended goal.
+
+THREE CORE PILLARS (الركائز الثلاث):
+- 01 يفهم السياق (Understands Context): يفهم حاجة المتعامل ووضعه وبياناته وخدماته السابقة والصلاحيات التي منحها. / Understands customer needs, context, profile data, previous service history, and granted permissions.
+- 02 يفكّر ويخطط (Thinks & Plans): يحدد المتطلبات والأنظمة والخطوة التالية وما يحتاج إلى موافقة أو تدخل. / Identifies requirements, backend systems, next steps, and actions requiring approval or human intervention.
+- 03 ينفّذ ويتابع (Executes & Follows up): يستخدم الأدوات، ويتحقق من النتائج، ويتابع حتى تتحقق النتيجة أو يتعذر الاستمرار. / Uses tools, verifies execution results, and follows up continuously until the outcome is achieved or continuation is not possible.
+
+ما يجعل النظام مساعداً ذكياً هو قدرته على الفهم والتخطيط والتنفيذ. وما يجعل التجربة نفسها Agentic هو انتقال عبء الرحلة من المتعامل إلى المساعد، مع الإبقاء على الإشراف والمساءلة البشرية.
+What makes the system an intelligent assistant is its ability to understand, plan, and execute. What makes the experience truly Agentic is the shift of the journey burden from the customer to the assistant, while preserving human oversight and accountability.
+
+================================================================================
+2. CORE SERVICE PRINCIPLES (المبادئ الستة لتصميم الخدمة)
+================================================================================
+
+STANDARD 01 — Outcome Before Procedure (النتيجة قبل الإجراء) [STD-01]
+Description (الوصف): يعبّر المتعامل عن النتيجة المطلوبة، ويتولى المساعد تحديد الخدمة والمسار. | The customer expresses the desired outcome, and the assistant determines the required service and path.
+Requirement (المتطلب): يجب أن تبدأ التجربة من النتيجة التي يريدها المتعامل دون اشتراط معرفته باسم الخدمة أو الهيكل الإداري للجهة الحكومية. | The journey should begin from the customer's intended outcome without requiring knowledge of internal government service structure or exact service names.
+
+STANDARD 02 — Burden Shifts to the Assistant (العبء على المساعد) [STD-02]
+Description (الوصف): يجمع المساعد المعلومات وينسق بين الجهات ويتابع التنفيذ بدلاً من المتعامل. | The assistant gathers information, coordinates between entities, and follows up on execution instead of the customer.
+Requirement (المتطلب): يتحمل المساعد جمع وربط البيانات المتاحة وتنسيق الإجراءات دون مطالبة المتعامل بأعمال إدارية متكررة أو إعادة إدخال بيانات موجودة. | The assistant collects and connects available information instead of requiring unnecessary administrative work or repeated data entry.
+
+STANDARD 03 — Natural Language as Primary Interface (اللغة الطبيعية هي الواجهة) [STD-03]
+Description (الوصف): المحادثة هي نقطة الدخول الأساسية، والأزرار اختصارات مساندة عند الحاجة. | Conversation is the primary entry point, with buttons acting as auxiliary shortcuts when needed.
+Requirement (المتطلب): يتواصل المتعامل بلغته الطبيعية دون الحاجة لفهم مصطلحات تقنية أو قوائم معقدة أو نماذج جامدة. | The customer communicates naturally without needing to understand complex menus, forms, or technical jargon.
+
+STANDARD 04 — Customer Control (التحكم للمتعامل) [STD-04]
+Description (الوصف): يعرف المتعامل ما سيفعله المساعد، ويوافق عليه، ويمكنه الإيقاف أو سحب الصلاحية. | The customer understands what the assistant will do, consents to it, and can pause, stop, or revoke permissions at any time.
+Requirement (المتطلب): توفير نقاط تحكم وموافقة صريحة للإجراءات المؤثرة والمالية والبيانات الحساسة، وإتاحة إيقاف المساعد بخطوة واحدة. | Clear visibility and explicit consent for impactful actions, fees, and data, with one-step permission revocation.
+
+STANDARD 05 — Continuous Experience (No Starting from Zero) (الاستمرارية لا البدء من الصفر) [STD-05]
+Description (الوصف): تُحفظ حالة الخدمة والموافقات والخطوة التالية، وليس سجل المحادثة فقط. | Service state, approvals, and next steps are preserved, not just the chat history.
+Requirement (المتطلب): تنتقل حالة الطلب والسياق كاملاً عبر الجلسات والقنوات والموظفين دون إجبار المتعامل على إعادة سرد قصته أو البدء من الصفر. | Context and state persist seamlessly across sessions, channels, and employees without restarting.
+
+STANDARD 06 — Exceptions Are Designed (التصميم للسيناريوهات المختلفة) [STD-06]
+Description (الوصف): تُصمم الاستثناءات والتعطل والتعارض والتدخل البشري منذ البداية. | Exceptions, failures, conflicts, and human handoffs are intentionally designed from the start.
+Requirement (المتطلب): تحديد مسارات التعافي والتدخل البشري السلس لكافة حالات الفشل أو التعقيد أو عدم الأهلية دون ترك المتعامل في طريق مسدود. | Every failure mode and exception has an explicit recovery path and human handoff with full context preserved.
+
+================================================================================
+3. EIGHT STAGES OF ASSISTED EXPERIENCE (المراحل الثماني للتجربة المساعدة)
+================================================================================
+
+STAGE 01 — Journey Start (بدء الرحلة) [STAGE-01]
+Summary (الملخص): يبدأ المتعامل بطلب طبيعي، أو يبادر المساعد عند وجود حاجة حقيقية وواضحة. | Customer starts with a natural request, or the assistant proactively initiates upon a genuine, clear need.
+Rules & Examples (القواعد والأمثلة):
+  * يمكن للمتعامل أن يقول: «جدد ملكية مركبتي» دون معرفة اسم الخدمة أو الجهة. (Customer can simply say 'Renew my vehicle registration' without knowing service or entity names.)
+  * يجوز للمساعد أن يبادر: «ستنتهي ملكية مركبتك خلال 12 يوماً، هل ترغب أن أبدأ؟» (Assistant may proactively suggest: 'Your vehicle registration expires in 12 days, would you like me to start?')
+  * لا يبدأ أي إجراء حساس أو ملزم دون موافقة واضحة من المتعامل. (No sensitive or binding action begins without explicit customer approval.)
+
+STAGE 02 — Understand Intent & Context (فهم النية والسياق) [STAGE-02]
+Summary (الملخص): يفهم المساعد النتيجة المطلوبة ويستخدم السياق لتحديد المقصود بدقة. | Assistant understands the target outcome and leverages permitted context to determine intent precisely.
+Rules & Examples (القواعد والأمثلة):
+  * يفهم الحاجة حتى لو لم يذكر المتعامل اسم الخدمة. (Understands need even if customer doesn't name the service.)
+  * إذا كان الطلب غير واضح، يسأل سؤالاً واحداً محدداً بدلاً من سلسلة أسئلة. (If request is ambiguous, asks exactly one targeted clarifying question instead of endless questions.)
+  * مثال: «لديك مركبتان، هل تقصد المركبة التي تنتهي ملكيتها في 18 أغسطس؟» (Example: 'You have two vehicles, do you mean the one expiring on August 18?')
+
+STAGE 03 — Complete Information (Once-Only Principle) (استكمال المعلومات (تطبيق الطلب مرة واحدة)) [STAGE-03]
+Summary (الملخص): يطبّق المساعد سياسة «الطلب مرة واحدة» ولا يطلب ما تعرفه الحكومة بالفعل. | Assistant applies the 'Once-Only Principle' and never asks for data the government already knows.
+Rules & Examples (القواعد والأمثلة):
+  * يسترجع البيانات الحكومية المتاحة والمصرح باستخدامها ويتحقق من صلاحيتها. (Retrieves and validates permitted government data automatically.)
+  * يوضح أي تعارض، ويطلب فقط المعلومات غير المتوفرة، مع بيان سبب طلبها. (Clarifies conflicts and requests only missing data with clear justification.)
+  * مثال: «لدي بيانات المركبة والفحص، وأحتاج فقط إلى تأكيد عنوان التوصيل.» (Example: 'I already have your vehicle and inspection records; I only need you to confirm delivery address.')
+
+STAGE 04 — Determine Journey & Approvals (تحديد المسار والموافقة) [STAGE-04]
+Summary (الملخص): يشرح المساعد ما سيفعله، وما سيستخدمه، وما يحتاج إلى موافقة المتعامل. | Assistant outlines intended actions, data usage, and specific approvals needed from the customer.
+Rules & Examples (القواعد والأمثلة):
+  * يعرض خطة بسيطة تشمل الإجراءات والبيانات والتكلفة المتوقعة. (Presents a clean plan covering actions, data used, and estimated fees.)
+  * يطلب موافقات دقيقة مرتبطة بإجراء محدد، وليست صلاحية عامة مفتوحة. (Requests granular consents tied to specific actions, not blanket open authorization.)
+  * يعرض خطة التنفيذ وسجل الإجراءات، ولا يعرض التفكير الداخلي للنظام. (Displays execution plan and audit log, not raw internal system prompts.)
+
+STAGE 05 — Execution & Continuity (التنفيذ والاستمرارية) [STAGE-05]
+Summary (الملخص): ينفّذ المساعد عبر الأنظمة الحكومية ويحفظ حالة الطلب حتى اكتمال النتيجة. | Assistant executes via backend government systems and preserves request state until completion.
+Rules & Examples (القواعد والأمثلة):
+  * يتحقق من نتيجة كل خطوة قبل تحديد الخطوة التالية. (Validates step output before triggering subsequent actions.)
+  * إذا احتاجت الخدمة وقتاً، يسمح للمتعامل بالمغادرة ويبلغه عند الجاهزية. (If async processing is needed, lets customer leave and notifies upon completion.)
+  * عند العودة، تستكمل الرحلة من حيث توقفت عبر الجلسات والقنوات المختلفة. (Upon return, resumes exactly where left off across channels and sessions.)
+
+STAGE 06 — Exceptions & Human Handoff (الاستثناءات والتدخل البشري) [STAGE-06]
+Summary (الملخص): يتعافى المساعد من الحالات غير الطبيعية، أو ينقلها إلى موظف مع كامل السياق. | Assistant recovers from anomalies or hands off to human staff with full context intact.
+Rules & Examples (القواعد والأمثلة):
+  * يشرح المشكلة بلغة غير تقنية، ويحدد ما سيحدث تالياً. (Explains issues in non-technical language and states next steps clearly.)
+  * يحوّل الحالة عند الطلب، أو التعقيد، أو الحساسية، أو تجاوز الصلاحيات، أو التعطل. (Escalates upon customer request, complexity, sensitive topics, permission limits, or system outage.)
+  * ينتقل الطلب والسياق والإجراءات والموافقات إلى الموظف؛ فلا يعيد المتعامل قصته. (Transfers case, context, previous actions, and consents so customer never repeats their story.)
+
+STAGE 07 — Payment via UAE Payment Gateway (الدفع عبر سداد الإمارات) [STAGE-07]
+Summary (الملخص): يتم الدفع ضمن تجربة موحدة، بعد عرض التفاصيل والحصول على موافقة صريحة. | Payment occurs within a unified flow after full fee breakdown and explicit consent.
+Rules & Examples (القواعد والأمثلة):
+  * يعرض الرسوم والبنود والمبلغ الإجمالي والجهة المستفيدة ووسيلة الدفع. (Displays detailed itemized fees, total, beneficiary agency, and payment method.)
+  * يوضح ما سيتم بعد الدفع وسياسة الاسترداد أو معالجة فشل العملية. (Explains post-payment flow, refund policy, and payment failure resolution.)
+  * إذا تم الخصم دون اكتمال الخدمة، يتولى المساعد المتابعة نيابة عن المتعامل. (If charged without service completion, assistant actively resolves and reconciles on customer behalf.)
+
+STAGE 08 — Result, Objection & Customer Pulse (النتيجة والاعتراض ونبض المتعامل) [STAGE-08]
+Summary (الملخص): يقدم المساعد نتيجة واضحة، ومساراً مباشراً للسؤال أو التصحيح أو الاعتراض. | Assistant delivers clear result and direct path for questions, corrections, objections, or pulse feedback.
+Rules & Examples (القواعد والأمثلة):
+  * يوضح ما تم إنجازه، ووقت السريان، ومكان الوثيقة، وأي خطوة لاحقة. (Clarifies accomplished outcome, effective date, document location, and next steps.)
+  * يتيح سؤالاً أو توضيحاً أو تصحيحاً أو اعتراضاً أو طلب تدخل موظف من المكان نفسه. (Enables in-place clarification, correction, formal objection, or human escalation.)
+  * يقيس نبض المتعامل حول سهولة الرحلة والثقة والرضا عن التجربة الكاملة. (Captures customer pulse regarding journey effort, trust, and overall satisfaction.)
+
+================================================================================
+4. AGENTIC BOUNDARIES & CLASSIFICATION (حدود التصنيف)
+================================================================================
+ليس Chatbot، وليس نموذجاً داخل محادثة. بل لغة حوار طبيعية تفهم حاجة المتعامل، وتحدد ما يلزم، وتتصرف نيابة عنه حتى تحقيق النتيجة.
+Not a simple chatbot, nor a form stuffed in chat. It is a natural conversational interface that understands customer need, determines what is required, and acts on their behalf until the outcome is achieved.
+
+Agentic Characteristics (خصائص الذكاء المساعد):
+  [✓] المتعامل يعبّر عن النتيجة بلغته الطبيعية
+  [✓] المساعد يفهم السياق والبيانات ذات الصلة
+  [✓] يحدد المسار بحسب حالة المتعامل
+  [✓] يستخدم الأدوات وينفذ الإجراءات
+  [✓] لا يطلب معلومات معروفة حكومياً
+  [✓] يحافظ على حالة الطلب عبر الجلسات والقنوات
+  [✓] يتعامل مع الاستثناءات وينقل السياق
+  [✓] يتابع حتى النتيجة
+
+Non-Agentic Limitations (ما ليس ذكاء مساعداً):
+  [✕] المتعامل يبحث عن اسم الخدمة
+  [✕] روبوت يجيب عن أسئلة عامة فقط
+  [✕] مسار ثابت لا يتكيف مع الحالة
+  [✕] يقدم تعليمات أو روابط فقط
+  [✕] يحوّل المحادثة إلى نموذج تعبئة
+  [✕] يبدأ من الصفر عند العودة
+  [✕] يعمل فقط في المسار المثالي
+  [✕] ينتهي عند تقديم التوصية
+
+================================================================================
+5. DELIVERY METHODOLOGY (منهجية تطبيق الدليل - 8 خطوات)
+================================================================================
+Step 1: حدد النتيجة وخط الأساس (Define Outcome & Baseline) - ما النتيجة التي يريدها المتعامل؟ وكيف تعمل الرحلة اليوم؟ وما الرضا والوقت والجهد الحالي؟ | What outcome does the customer seek? How does the journey work today? What is current effort, time, and satisfaction?
+Step 2: ارسم الرحلة الكاملة (Map Complete Journey) - ابدأ من التعبير عن الحاجة، ولا تتوقف عند تقديم الطلب؛ صمّم حتى النتيجة وما بعدها. | Start from expressing the need, do not stop at application submission; design through to the outcome and beyond.
+Step 3: حدد السياق والبيانات (Identify Context & Data) - ما الذي تعرفه الحكومة؟ وما المسموح باستخدامه؟ وما الذي لا يزال مطلوباً من المتعامل؟ | What does the government already know? What is legally reusable? What genuinely remains needed from the customer?
+Step 4: صمّم القرارات والصلاحيات (Design Decisions & Authorities) - ما الذي ينفذّه المساعد؟ ومتى يطلب موافقة؟ وما الذي يبقى بيد المتعامل أو الموظف؟ | What does the assistant execute autonomously? When is consent needed? What remains with customer or human staff?
+Step 5: صمّم التنفيذ والاستمرارية (Design Execution & Continuity) - اربط الأدوات والأنظمة، واحفظ حالة الطلب، وحدد الإشعارات والخطوة التالية. | Integrate backend tools and systems, persist request state, and define proactive notifications and next steps.
+Step 6: صمّم الاستثناءات والتدخل البشري (Design Exceptions & Human Handoff) - اختبر التعطل والتعارض والحساسية وعدم الأهلية وفشل الدفع، وحدد مسار التعافي. | Test outages, conflicts, sensitive cases, ineligibility, and payment failure; define clear recovery pathways.
+Step 7: اختبر مع مستخدمين حقيقيين (Test with Real Users) - اختبر اللغة والثقة والموافقات والوضوح والجهد، لا المسار التقني وحده. | Test language comprehension, trust, approvals, clarity, and customer effort, not just technical connectivity.
+Step 8: أطلق وقِس وحسّن (Launch, Measure & Improve) - قارن النتائج بخط الأساس، وراجع السجلات والاستثناءات ونبض المتعامل بصورة مستمرة. | Compare live metrics against baseline, audit logs, analyze exceptions, and continuously refine based on customer pulse.
+
+================================================================================
+6. REQUIRED DELIVERABLES (المخرجات العشرة المطلوبة من فريق الخدمة)
+================================================================================
+1. بيان النتيجة المستهدفة ونطاق الخدمة (Target Outcome & Service Scope Statement)
+2. خريطة رحلة المتعامل الحالية والمستقبلية (Current & Future Customer Journey Map)
+3. سيناريو المحادثة باللغة الطبيعية (Natural Language Conversational Flow Scenario)
+4. مصفوفة البيانات وتطبيق «الطلب مرة واحدة» (Data Matrix & 'Once-Only' Principle Implementation)
+5. مصفوفة الصلاحيات والموافقات (Authority Matrix & Granular Approvals)
+6. خطة التنفيذ والتكامل مع الأنظمة والأدوات (Execution Plan & System Integration Architecture)
+7. سجل الإجراءات المنفذة باسم المتعامل (Audit Log of Actions Executed on Behalf of Customer)
+8. مصفوفة الاستثناءات والتعافي (Exceptions & Recovery Matrix)
+9. نموذج نقل السياق إلى الموظف (Context Transfer Model for Human Handoff)
+10. خط الأساس ومؤشرات قياس الأثر (Baseline Metrics & Impact Measurement KPIs)
+
+================================================================================
+7. READINESS CHECKLIST (قائمة التحقق من الجاهزية - 12 معياراً)
+================================================================================
+[READY-01] الحوكمة والصلاحيات (Governance & Authority): مصفوفة صلاحيات المساعد موثقة بلغة بسيطة، وسحب الصلاحية متاح بخطوة واحدة. | Assistant authority matrix is documented in clear terms, and permission revocation is available in one step. [الدليل المطلوب: مصفوفة الصلاحيات والموافقات]
+[READY-02] تجربة المتعامل (Customer Experience): خريطة الرحلة مكتملة من بداية الطلب حتى ما بعد النتيجة، مع انتقال العبء إلى المساعد. | Complete journey mapped from initial request to post-result, with burden shifted to assistant. [الدليل المطلوب: خريطة رحلة المتعامل]
+[READY-03] اللغة الطبيعية (Natural Language): يمكن بدء الرحلة واستكمالها وتعديل الطلب والاعتراض باللغة الطبيعية. | Journey can be started, continued, modified, and contested via natural language dialogue. [الدليل المطلوب: سيناريو المحادثة]
+[READY-04] الطلب مرة واحدة (Once-Only Principle): لا يطلب المساعد معلومات متاحة لدى الحكومة ومصرحاً باستخدامها. | Assistant never asks for information already known to government and authorized for reuse. [الدليل المطلوب: خريطة البيانات]
+[READY-05] الشفافية والثقة (Transparency & Trust): يعرّف المساعد بنفسه بوضوح، ويعرض سجلاً مفهوماً لما نفذه باسم المتعامل. | Assistant clearly identifies itself and provides an understandable audit log of actions taken. [الدليل المطلوب: سجل الإجراءات]
+[READY-06] الموافقات (Approvals & Consents): كل موافقة تحدد الإجراء والبيانات والتكلفة، وليست موافقة عامة مفتوحة. | Every consent specifies exact action, data, and cost, avoiding blanket authorizations. [الدليل المطلوب: سجل الموافقات]
+[READY-07] الاستمرارية والقنوات (Continuity & Omnichannel): تنتقل حالة الطلب والسياق كاملاً عبر الجلسات والقنوات دون البدء من الصفر. | Full request state and context transfer across sessions and channels without restarting. [الدليل المطلوب: مخطط الاستمرارية]
+[READY-08] الاستثناءات (Exception Handling): لكل نوع فشل مسار تعافٍ ورسالة واضحة غير تقنية. | Every failure category has a defined recovery path and clear, non-technical explanation. [الدليل المطلوب: مصفوفة الاستثناءات]
+[READY-09] التدخل البشري (Human Intervention): ينتقل الطلب والسياق والإجراءات السابقة إلى الموظف متى كان ذلك مناسباً. | Request, context, and preceding actions transfer seamlessly to human employee when needed. [الدليل المطلوب: نموذج نقل السياق]
+[READY-10] الدفع (Payment Journey): تعرض الرسوم بوضوح وتنفذ المدفوعات الحكومية عبر سداد الإمارات بعد موافقة صريحة. | Fees clearly itemized and executed via UAE Payment Gateway following explicit consent. [الدليل المطلوب: سيناريو الدفع]
+[READY-11] النتيجة والاعتراض (Result & Objection): النتيجة واضحة، ومسار الاستفسار والتصحيح والاعتراض متاح من المكان نفسه. | Result is transparent, and clarification, correction, or objection is available in-place. [الدليل المطلوب: نموذج النتيجة والاعتراض]
+[READY-12] الاختبار والقياس (Testing & Metrics): اختُبرت التجربة مع مستخدمين حقيقيين، وقورنت النتائج بخط أساس واضح. | Experience tested with real users, and outcomes benchmarked against verified baseline. [الدليل المطلوب: نتائج الاختبار ومؤشرات الأثر]

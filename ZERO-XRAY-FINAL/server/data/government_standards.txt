@@ -1,0 +1,324 @@
+GOVERNMENT AI ASSISTANT SERVICE DESIGN STANDARDS
+Source: Government Guide for Designing Government Service Experiences with Assistant AI
+
+==================================================
+1. CORE AGENTIC AI PRINCIPLE
+==================================================
+
+The assistant must be capable of understanding context, planning the required actions, executing tasks using available tools and systems, verifying results, and continuing until the intended outcome is achieved or continuation is no longer possible.
+
+The experience becomes Agentic when the burden of the service journey shifts from the customer to the assistant while maintaining appropriate human oversight and accountability.
+
+==================================================
+2. TARGET GOVERNMENT SERVICE EXPERIENCE
+==================================================
+
+The target experience should move away from requiring the customer to:
+
+- Search for the service name or responsible entity.
+- Understand all service requirements independently.
+- Fill forms manually.
+- Upload documents already available to government.
+- Navigate between entities, systems, pages, or channels.
+- Repeatedly enter the same information.
+- Follow up on the request manually.
+
+The assistant should instead:
+
+- Understand what outcome the customer wants.
+- Understand the customer's context.
+- Collect available information when permitted.
+- Determine requirements.
+- Determine the appropriate service journey.
+- Execute eligible actions through available systems.
+- Continue following the request until the result is achieved.
+- Clearly communicate status, decisions, and required customer actions.
+
+==================================================
+3. PRINCIPLES OF THE ASSISTED EXPERIENCE
+==================================================
+
+STANDARD 01 — OUTCOME BEFORE PROCEDURE
+
+The customer should express the desired outcome rather than being required to identify the exact government service, procedure, or channel.
+
+The assistant should determine the relevant service and required journey.
+
+STANDARD 02 — BURDEN SHIFTS TO THE ASSISTANT
+
+The assistant should collect and connect available information between entities and systems instead of requiring the customer to perform unnecessary administrative work.
+
+The customer should not be required to repeat information that is already available and permitted for use.
+
+STANDARD 03 — NATURAL LANGUAGE AS PRIMARY INTERFACE
+
+The experience should allow the customer to communicate naturally.
+
+The customer should not need to understand complex government structures, menus, forms, or technical terminology in order to request an outcome.
+
+STANDARD 04 — CUSTOMER CONTROL
+
+The customer must understand what the assistant is doing.
+
+The customer should be able to approve, reject, pause, or stop actions when appropriate.
+
+Explicit consent must be obtained where required.
+
+STANDARD 05 — CONTINUOUS EXPERIENCE
+
+The experience should work consistently across relevant channels and touchpoints.
+
+The customer should not have to restart the journey unnecessarily when moving between channels.
+
+STANDARD 06 — EXCEPTIONS ARE DESIGNED
+
+The service journey must account for exceptional cases, failure scenarios, delays, objections, and cases requiring human intervention.
+
+Exceptions should not be treated as an afterthought.
+
+==================================================
+4. EIGHT STAGES OF THE ASSISTED EXPERIENCE
+==================================================
+
+STAGE 01 — JOURNEY START
+
+The interaction should begin with a natural customer request or clear need.
+
+The customer should not be required to know the exact service name before beginning.
+
+STAGE 02 — UNDERSTAND INTENT AND CONTEXT
+
+The assistant must understand the customer's request and relevant context before deciding the appropriate action.
+
+The assistant should clarify only information genuinely required to continue.
+
+STAGE 03 — COMPLETE INFORMATION
+
+The assistant should request only information that is necessary and not already available through permitted government data sources.
+
+Available information should be reused where permitted.
+
+Repeated data collection should be avoided.
+
+STAGE 04 — DETERMINE THE JOURNEY AND APPROVALS
+
+The assistant determines the appropriate service path, required actions, dependencies, and approvals.
+
+The assistant should explain what it will do and identify when customer approval is required.
+
+Unnecessary approvals should not be introduced.
+
+STAGE 05 — EXECUTION AND CONTINUITY
+
+The assistant should execute eligible actions through government systems and continue the journey until the intended result is achieved.
+
+The customer should not be required to manually transfer information between systems when this can be performed through approved integrations.
+
+STAGE 06 — EXCEPTIONS AND HUMAN HANDOFF
+
+When the assistant cannot continue safely or appropriately, the case should be transferred to a human employee with the relevant context.
+
+The customer should not need to restart the journey or repeat information already provided.
+
+STAGE 07 — PAYMENT THROUGH THE JOURNEY
+
+Where payment is required, the customer should receive a clear summary before payment.
+
+Payment should be performed through an approved and secure mechanism.
+
+Explicit customer approval should be obtained when required.
+
+STAGE 08 — RESULT, OBJECTION, AND CUSTOMER CONTROL
+
+The assistant should provide a clear result.
+
+The customer should have a clear mechanism to ask questions, request clarification, object, correct information, or escalate the case.
+
+==================================================
+5. SERVICE REDESIGN METHODOLOGY
+==================================================
+
+STEP 01 — DEFINE THE OUTCOME AND CURRENT BURDEN
+
+Identify what the customer actually wants to achieve.
+
+Identify the time, effort, steps, documents, visits, approvals, and interactions currently required.
+
+STEP 02 — MAP THE COMPLETE CURRENT JOURNEY
+
+Map the journey from the moment the customer has the need until the final result is achieved.
+
+Do not map only the digital interface.
+
+Include activities occurring across departments, employees, systems, entities, and channels.
+
+STEP 03 — IDENTIFY CONTEXT AND AVAILABLE DATA
+
+Determine what information is already known or available.
+
+Determine what data can be reused according to permissions and applicable policy.
+
+Do not ask the customer for information already available when reuse is permitted.
+
+STEP 04 — IDENTIFY DECISIONS AND APPROVALS
+
+Identify every decision and approval in the journey.
+
+Determine whether each approval is genuinely necessary.
+
+Identify decisions that can be automated and decisions that require human judgment.
+
+STEP 05 — DESIGN EXECUTION AND CONTINUITY
+
+Connect systems and service actions so the journey can continue without unnecessary customer intervention.
+
+Reduce manual transfers between systems.
+
+Reduce unnecessary waiting and follow-up.
+
+STEP 06 — DESIGN EXCEPTIONS AND HUMAN HANDOFF
+
+Identify failure conditions and exceptions.
+
+Define when human intervention is required.
+
+Transfer the case together with its context instead of forcing the customer to restart.
+
+STEP 07 — TEST WITH REAL USERS
+
+Test the proposed journey with representative users.
+
+Evaluate clarity, trust, effort, approvals, and the ability to achieve the intended outcome.
+
+STEP 08 — LAUNCH, MEASURE, AND IMPROVE
+
+Measure actual service performance after implementation.
+
+Review customer effort, journey completion, exceptions, manual intervention, and service outcomes.
+
+Continuously improve the journey.
+
+==================================================
+6. REQUIRED SERVICE ARTIFACTS
+==================================================
+
+A redesigned service should define:
+
+- Target service outcome.
+- Current customer journey.
+- Future customer journey.
+- Required data and information.
+- Required approvals and permissions.
+- System integrations.
+- Human intervention points.
+- Exception paths.
+- Customer consent points.
+- Customer control mechanisms.
+- Measurement indicators.
+- Implementation dependencies.
+
+==================================================
+7. ANALYSIS RULES FOR ZERO BUREAUCRACY
+==================================================
+
+When analyzing a service, identify:
+
+- Unnecessary customer steps.
+- Duplicate steps.
+- Repeated data entry.
+- Information already available to government.
+- Unnecessary documents.
+- Manual transfer of information.
+- Manual actions that could reasonably be automated.
+- Unnecessary approvals.
+- Unnecessary customer visits.
+- Unnecessary movement between channels.
+- Unnecessary waiting periods.
+- Repeated follow-up by the customer.
+- Opportunities for system integration.
+- Opportunities for proactive execution.
+- Missing exception handling.
+- Missing human handoff mechanisms.
+
+A step must not be removed only for the purpose of reducing the number of steps.
+
+Every removal, merge, or automation recommendation must have a reason and must remain compatible with the applicable government standards.
+
+==================================================
+8. READINESS AND VALIDATION CHECKLIST
+==================================================
+
+Validate the redesigned service against the following areas:
+
+OUTCOME AND ENABLEMENT
+
+The assistant has clear and simplified authority required to help achieve the intended outcome.
+
+CUSTOMER JOURNEY
+
+The complete journey is understood from the beginning of the request until the final result, including transitions between the assistant, systems, and employees.
+
+NATURAL LANGUAGE
+
+The customer can begin and continue the journey using natural language without needing to understand internal government structure.
+
+DATA AND CONTEXT
+
+The assistant does not request information already available to government when that information can lawfully and appropriately be reused.
+
+CUSTOMER CONTROL
+
+The customer understands what the assistant is doing and can provide required approval or stop an action where appropriate.
+
+APPROVALS
+
+Approvals are used only where necessary.
+
+Unnecessary approvals should be removed.
+
+CONTINUITY
+
+The customer should not need to repeat the same information when moving between systems, channels, or employees.
+
+EXCEPTIONS
+
+Each important exception has a clear path and does not unnecessarily force the customer to restart the journey.
+
+HUMAN HANDOFF
+
+When human intervention is required, the relevant context and previous actions should transfer with the case.
+
+PAYMENT
+
+Payment requirements and amounts must be clearly presented before payment and explicit approval obtained when required.
+
+RESULT AND OBJECTION
+
+The result must be clear.
+
+The customer must have a mechanism for questions, clarification, correction, objection, or escalation.
+
+TESTING AND MEASUREMENT
+
+The redesigned experience should be tested with users and measured after launch.
+
+==================================================
+9. ANALYSIS CONSTRAINTS
+==================================================
+
+The AI must use this government guide as its source of service-design standards.
+
+The AI must not invent a government requirement that is not supported by the guide or by additional approved policy provided to the system.
+
+The AI must distinguish between:
+
+1. A requirement explicitly supported by the government guide.
+2. A redesign recommendation.
+3. A proposed technical integration.
+4. An assumption requiring human confirmation.
+
+The system must not claim that a proposed integration already exists unless evidence confirms that it exists.
+
+The system must not remove a mandatory legal, regulatory, security, identity, payment, or approval requirement without evidence that removal is permitted.
+
+The primary redesign objective is to reduce unnecessary customer burden while preserving required controls, accountability, security, and service outcomes.

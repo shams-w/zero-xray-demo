@@ -1,0 +1,13 @@
+-r requirements.txt
+
+# LEGACY / not required for the primary AI path anymore.
+# AI reasoning now calls Ollama over HTTP (see core/llm.py) instead of
+# loading a model in-process, so none of the packages below are needed
+# for the AI-primary pipeline to work. Only install this file if you
+# specifically want to experiment with the optional in-process
+# transformers fallback path.
+transformers
+torch
+accelerate
+sentence-transformers
+faiss-cpu
