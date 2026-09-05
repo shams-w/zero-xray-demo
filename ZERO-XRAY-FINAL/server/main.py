@@ -170,7 +170,19 @@ def _set_customer_journey_cookie(response: Response, journey_id: str, raw_token:
     # Keep the opaque capability out of URLs, JSON bodies and frontend state.
     # HttpOnly prevents JavaScript from reading it; Path scopes it to exactly
     # one journey's API surface. Secure cookies can be enabled in deployment.
-    secure_cookie = os.getenv("ZX_SECURE_COOKIES", "0").strip().lower() in {"1", "true", "yes"}
+    secure_setting = os.getenv("ZX_SECURE_COOKIES", "").strip().lower()
+    if secure_setting:
+        secure_cookie = secure_setting in {"1", "true", "yes"}
+    else:
+        # Vercel -> Render is a cross-site browser request. Modern browsers
+        # only send that capability cookie when it is SameSite=None; Secure.
+        # Keep local HTTP development on SameSite=Lax.
+        allowed_origins = os.getenv("ZX_ALLOWED_ORIGINS", "")
+        secure_cookie = any(
+            origin.strip().lower().startswith("https://")
+            for origin in allowed_origins.split(",")
+            if origin.strip()
+        )
     expires_dt = datetime.fromisoformat(expires_at)
     max_age = max(1, int((expires_dt - datetime.now(timezone.utc)).total_seconds()))
     response.set_cookie(
@@ -181,7 +193,7 @@ def _set_customer_journey_cookie(response: Response, journey_id: str, raw_token:
         path=f"/api/journeys/{journey_id}",
         secure=secure_cookie,
         httponly=True,
-        samesite="lax",
+        samesite="none" if secure_cookie else "lax",
     )
 tenant_repository = TenantRepository(database_path=runtime_store.database_path)
 tenant_service = TenantService(repository=tenant_repository)
