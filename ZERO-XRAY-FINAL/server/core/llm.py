@@ -657,7 +657,7 @@ class LocalLLM:
             try:
                 print(
                     f"[LLM] Sending request to Groq (model={GROQ_MODEL}, "
-                    f"max_tokens={min(max_new_tokens, 16384)}, timeout={timeout}s)..."
+                    f"max_tokens={min(max_new_tokens, 800)}, timeout={timeout}s)..."
                 )
                 response = requests.post(
                     f"{GROQ_BASE_URL}/chat/completions",
@@ -669,7 +669,7 @@ class LocalLLM:
                         "model": GROQ_MODEL,
                         "messages": messages,
                         "temperature": max(float(temperature), 1e-8),
-                        "max_tokens": min(max_new_tokens, 16384),
+                        "max_tokens": min(max_new_tokens, 800),
                         "response_format": {"type": "json_object"},
                         "reasoning_effort": "none",
                     },
@@ -991,6 +991,7 @@ class LocalLLM:
                     )
 
         return content
+
 
 
 
