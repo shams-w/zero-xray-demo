@@ -1,4 +1,5 @@
 import os
+import re
 import time as _time
 import requests
 
@@ -64,6 +65,18 @@ GROQ_MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.6-27b").strip()
 GROQ_BASE_URL = os.environ.get(
     "GROQ_BASE_URL", "https://api.groq.com/openai/v1"
 ).rstrip("/")
+
+# Groq Free/Developer tiers enforce output-token-per-minute limits.
+# Keep the per-call budget conservative and, more importantly, retry
+# transient 429 responses instead of poisoning the availability cache
+# for the rest of a 9-agent analysis run. These are transport controls
+# only: agent prompts, parsers, deterministic fallbacks and journey logic
+# remain unchanged.
+GROQ_MAX_OUTPUT_TOKENS = max(1, int(os.environ.get("GROQ_MAX_OUTPUT_TOKENS", "700")))
+GROQ_RATE_LIMIT_RETRIES = max(0, int(os.environ.get("GROQ_RATE_LIMIT_RETRIES", "4")))
+GROQ_RATE_LIMIT_MAX_WAIT_SECONDS = max(1.0, float(
+    os.environ.get("GROQ_RATE_LIMIT_MAX_WAIT_SECONDS", "65")
+))
 
 # =============================================================
 # MANDATORY AI MODE (root-cause fix -- Ollama availability)
@@ -654,55 +667,113 @@ class LocalLLM:
             if not GROQ_API_KEY:
                 print("[LLM] Groq call skipped: GROQ_API_KEY is not configured.")
                 return ""
-            try:
-                print(
-                    f"[LLM] Sending request to Groq (model={GROQ_MODEL}, "
-                    f"max_tokens={min(max_new_tokens, 700)}, timeout={timeout}s)..."
+
+            groq_max_tokens = min(max_new_tokens, GROQ_MAX_OUTPUT_TOKENS)
+
+            def _retry_after_seconds(response):
+                """Return Groq's requested wait for a 429, capped safely.
+
+                Groq normally sends Retry-After. Some responses also put
+                phrases such as "try again in 34.02s" / "480ms" in the
+                JSON error message. Parse either form so Free-tier throttling
+                is handled deterministically without depending on one header.
+                """
+                raw = str(response.headers.get("Retry-After", "") or "").strip()
+                try:
+                    if raw:
+                        return min(GROQ_RATE_LIMIT_MAX_WAIT_SECONDS, max(0.05, float(raw)))
+                except (TypeError, ValueError):
+                    pass
+
+                text = str(getattr(response, "text", "") or "")
+                match = re.search(
+                    r"try\s+again\s+in\s+([0-9]+(?:\.[0-9]+)?)\s*(ms|s|sec|secs|seconds)?",
+                    text,
+                    flags=re.IGNORECASE,
                 )
-                response = requests.post(
-                    f"{GROQ_BASE_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {GROQ_API_KEY}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": GROQ_MODEL,
-                        "messages": messages,
-                        "temperature": max(float(temperature), 1e-8),
-                        "max_tokens": min(max_new_tokens, 700),
-                        "response_format": {"type": "json_object"},
-                        "reasoning_effort": "none",
-                    },
-                    timeout=timeout,
-                )
-                if response.status_code != 200:
+                if match:
+                    value = float(match.group(1))
+                    unit = (match.group(2) or "s").lower()
+                    if unit == "ms":
+                        value /= 1000.0
+                    return min(GROQ_RATE_LIMIT_MAX_WAIT_SECONDS, max(0.05, value))
+
+                # A conservative fallback when Groq omits both forms.
+                return min(GROQ_RATE_LIMIT_MAX_WAIT_SECONDS, 5.0)
+
+            for attempt in range(GROQ_RATE_LIMIT_RETRIES + 1):
+                try:
                     print(
-                        f"[LLM] Non-200 from Groq: {response.status_code}. "
-                        f"Response body: {response.text[:500]!r}"
+                        f"[LLM] Sending request to Groq (model={GROQ_MODEL}, "
+                        f"max_tokens={groq_max_tokens}, timeout={timeout}s, "
+                        f"attempt={attempt + 1}/{GROQ_RATE_LIMIT_RETRIES + 1})..."
                     )
-                response.raise_for_status()
-                data = response.json()
-                choices = data.get("choices") or []
-                if not choices:
-                    print("[LLM] Groq returned no choices.")
+                    response = requests.post(
+                        f"{GROQ_BASE_URL}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {GROQ_API_KEY}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": GROQ_MODEL,
+                            "messages": messages,
+                            "temperature": max(float(temperature), 1e-8),
+                            "max_tokens": groq_max_tokens,
+                            "response_format": {"type": "json_object"},
+                            "reasoning_effort": "none",
+                        },
+                        timeout=timeout,
+                    )
+
+                    if response.status_code == 429:
+                        wait_seconds = _retry_after_seconds(response)
+                        print(
+                            f"[LLM] Groq rate limit (429). Waiting "
+                            f"{wait_seconds:.2f}s before retry. "
+                            f"Response body: {response.text[:500]!r}"
+                        )
+                        if attempt < GROQ_RATE_LIMIT_RETRIES:
+                            _time.sleep(wait_seconds)
+                            continue
+                        print(
+                            "[LLM] Groq rate limit retries exhausted; "
+                            "returning an empty response so the agent can use "
+                            "its explicitly-labelled fallback."
+                        )
+                        return ""
+
+                    if response.status_code != 200:
+                        print(
+                            f"[LLM] Non-200 from Groq: {response.status_code}. "
+                            f"Response body: {response.text[:500]!r}"
+                        )
+                    response.raise_for_status()
+                    data = response.json()
+                    choices = data.get("choices") or []
+                    if not choices:
+                        print("[LLM] Groq returned no choices.")
+                        return ""
+                    message = choices[0].get("message") or {}
+                    content = str(message.get("content", "") or "")
+                    if not content:
+                        print("[LLM] Groq returned an empty message content.")
+                        return ""
+                    return content
+                except requests.exceptions.RequestException as error:
+                    print(f"[LLM] Groq call failed: {error}")
+                    # A real transport/provider outage is different from a
+                    # transient 429. Only genuine connectivity failures poison
+                    # the run-level availability state and cause mandatory-AI
+                    # /api/analyze to abort without persisting a fake success.
+                    self._connectivity_failure_this_run = True
+                    self._availability_cache.update(
+                        available=False, reason=f"Groq call failed: {error}",
+                        checked_at=_time.monotonic(),
+                    )
                     return ""
-                message = choices[0].get("message") or {}
-                content = str(message.get("content", "") or "")
-                if not content:
-                    print("[LLM] Groq returned an empty message content.")
+                except (ValueError, TypeError, KeyError) as error:
+                    print(f"[LLM] Groq returned an unusable response: {error}")
                     return ""
-                return content
-            except requests.exceptions.RequestException as error:
-                print(f"[LLM] Groq call failed: {error}")
-                self._connectivity_failure_this_run = True
-                self._availability_cache.update(
-                    available=False, reason=f"Groq call failed: {error}",
-                    checked_at=_time.monotonic(),
-                )
-                return ""
-            except (ValueError, TypeError, KeyError) as error:
-                print(f"[LLM] Groq returned an unusable response: {error}")
-                return ""
 
         # The context window must fit BOTH the prompt tokens and the
         # requested output (num_predict). Without this, Ollama uses
@@ -991,9 +1062,6 @@ class LocalLLM:
                     )
 
         return content
-
-
-
 
 
 
