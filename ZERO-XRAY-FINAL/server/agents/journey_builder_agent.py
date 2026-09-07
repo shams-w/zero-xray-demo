@@ -1480,6 +1480,23 @@ Output ONLY this JSON object, "steps" first, at most 5 stages, 1 short sentence 
             )
             return None, "", "too_few_usable_stages"
 
+        # Quality gate: a substantial current journey must not collapse to
+        # a two-step answer and still be presented as a high-readiness
+        # redesign. For 5+ current steps require at least four coherent
+        # future stages. This is deliberately generic (no service names or
+        # fixed seven-step template) and only rejects implausibly thin AI
+        # output; genuine compact services with fewer than five current
+        # steps remain allowed to produce two or three future stages.
+        minimum_future_steps = 4 if len(source_steps) >= 5 else 2
+        if len(future_steps) < minimum_future_steps:
+            print(
+                "[AI QUALITY GATE] [JOURNEY] Rejected over-compressed "
+                f"journey: {len(source_steps)} current step(s) -> "
+                f"{len(future_steps)} future step(s); minimum accepted "
+                f"for this input is {minimum_future_steps}."
+            )
+            return None, "", "journey_overcompressed"
+
         if future_steps and not any(
             step.get("semantic_category") == "customer_outcome"
             for step in future_steps

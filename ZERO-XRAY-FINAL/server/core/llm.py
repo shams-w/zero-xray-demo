@@ -72,7 +72,7 @@ GROQ_BASE_URL = os.environ.get(
 # for the rest of a 9-agent analysis run. These are transport controls
 # only: agent prompts, parsers, deterministic fallbacks and journey logic
 # remain unchanged.
-GROQ_MAX_OUTPUT_TOKENS = max(1, int(os.environ.get("GROQ_MAX_OUTPUT_TOKENS", "700")))
+GROQ_MAX_OUTPUT_TOKENS = max(1, int(os.environ.get("GROQ_MAX_OUTPUT_TOKENS", "900")))
 GROQ_RATE_LIMIT_RETRIES = max(0, int(os.environ.get("GROQ_RATE_LIMIT_RETRIES", "4")))
 GROQ_RATE_LIMIT_MAX_WAIT_SECONDS = max(1.0, float(
     os.environ.get("GROQ_RATE_LIMIT_MAX_WAIT_SECONDS", "65")

@@ -38,7 +38,7 @@ from agents.orchestrator import (
     ServiceOrchestrator
 )
 
-from core.llm import REQUIRE_OLLAMA
+from core.llm import REQUIRE_OLLAMA, ZX_LLM_MODE, ai_label
 
 
 from core.pdf_reader import (
@@ -1000,6 +1000,41 @@ def analyze_service(
         ]
 
     result = orchestrator.analyze(service_payload)
+
+    # Production quality gate for Groq: the cloud-free-tier workflow
+    # intentionally reserves AI inference for Journey Builder while the
+    # other eight logical agents run their existing deterministic,
+    # evidence-grounded rules. Therefore the redesigned journey itself
+    # MUST be AI-produced and sufficiently complete before anything is
+    # translated, persisted, or exposed to Build Agent. A template
+    # fallback remains an internal safety net, but it must never be saved
+    # or displayed as if it were a successful AI analysis.
+    if ZX_LLM_MODE == "groq":
+        redesign = result.get("redesign") if isinstance(result, dict) else None
+        future_steps = (redesign or {}).get("future_steps") or []
+        journey_source = str((redesign or {}).get("analysis_source", "")).lower()
+        current_steps = (result.get("service") or {}).get("steps") or service_payload.get("steps") or []
+        minimum_future_steps = 4 if len(current_steps) >= 5 else 2
+        quality_issues = []
+        if journey_source != ai_label():
+            quality_issues.append(
+                f"Journey Builder source is {journey_source or 'missing'}, not AI."
+            )
+        if not isinstance(future_steps, list) or len(future_steps) < minimum_future_steps:
+            quality_issues.append(
+                f"Future journey has {len(future_steps) if isinstance(future_steps, list) else 0} "
+                f"step(s); at least {minimum_future_steps} are required for this service."
+            )
+        if quality_issues:
+            print("[ANALYSIS QUALITY GATE] Rejected incomplete Groq analysis: " + " ".join(quality_issues))
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "AI_ANALYSIS_INCOMPLETE: The AI journey did not pass the "
+                    "quality gate and was NOT saved. Please retry after the "
+                    "Groq rate-limit window clears. " + " ".join(quality_issues)
+                ),
+            )
 
     # `organization_context` is pipeline-internal EVIDENCE only (see the
     # contamination fix above). It must not be persisted into the

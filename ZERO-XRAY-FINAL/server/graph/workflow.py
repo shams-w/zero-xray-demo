@@ -44,6 +44,8 @@ from agents.validation_agent import (
     ValidationAgent,
 )
 
+from core.llm import IS_GROQ
+
 
 # ============================================================
 # LANGGRAPH STATE
@@ -108,33 +110,43 @@ def build_workflow(
     # INITIALIZE AGENTS
     # ========================================================
 
+    # Groq Free-tier orchestration: preserve the full 9-agent workflow,
+    # but reserve cloud inference for the one stage where generative
+    # reasoning is essential: Journey Builder. The remaining agents keep
+    # their existing deterministic/evidence-grounded logic. This avoids
+    # firing several 700-900 token requests in the same minute and then
+    # silently degrading half the pipeline to fallback after 429s.
+    # Local Ollama/mock modes are unchanged and still receive the LLM in
+    # every agent exactly as before.
+    support_llm = None if IS_GROQ else llm
+
     service_agent = (
         ServiceAnalystAgent(
-            llm
+            support_llm
         )
     )
 
     standards_agent = (
         StandardsAgent(
-            llm
+            support_llm
         )
     )
 
     gap_agent = (
         GapAnalysisAgent(
-            llm
+            support_llm
         )
     )
 
     zero_agent = (
         ZeroBureaucracyAgent(
-            llm
+            support_llm
         )
     )
 
     step_compliance_agent = (
         StepComplianceAgent(
-            llm
+            support_llm
         )
     )
 
@@ -146,13 +158,13 @@ def build_workflow(
 
     simulation_agent = (
         SimulationAgent(
-            llm
+            support_llm
         )
     )
 
     validation_agent = (
         ValidationAgent(
-            llm
+            support_llm
         )
     )
 
