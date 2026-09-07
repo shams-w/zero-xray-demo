@@ -58,6 +58,12 @@ OLLAMA_HOST = os.environ.get(
 # implemented once here instead of duplicated per agent.
 ZX_LLM_MODE = os.environ.get("ZX_LLM_MODE", "ollama").strip().lower()
 IS_MOCK = ZX_LLM_MODE == "mock"
+IS_GROQ = ZX_LLM_MODE == "groq"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.6-27b").strip()
+GROQ_BASE_URL = os.environ.get(
+    "GROQ_BASE_URL", "https://api.groq.com/openai/v1"
+).rstrip("/")
 
 # =============================================================
 # MANDATORY AI MODE (root-cause fix -- Ollama availability)
@@ -423,11 +429,14 @@ class LocalLLM:
 
     def __init__(self):
 
-        print(
-            f"Connecting to Ollama at {OLLAMA_HOST} "
-            f"(model: {OLLAMA_MODEL}, mode: "
-            f"{'MOCK' if IS_MOCK else 'REAL'})..."
-        )
+        if IS_GROQ:
+            print(f"Connecting to Groq (model: {GROQ_MODEL}, mode: CLOUD)...")
+        else:
+            print(
+                f"Connecting to Ollama at {OLLAMA_HOST} "
+                f"(model: {OLLAMA_MODEL}, mode: "
+                f"{'MOCK' if IS_MOCK else 'REAL'})..."
+            )
 
         # Centralized availability state (root-cause fix -- "one
         # centralized availability check/state" instead of every
@@ -456,10 +465,10 @@ class LocalLLM:
             print(
                 f"[LLM] Warning: {reason} AI-assisted decisions will "
                 f"fall back to each agent's deterministic default "
-                f"until Ollama is reachable."
+                f"until the configured AI provider is reachable."
             )
 
-        print("Ollama connection check complete.")
+        print("AI provider connection check complete.")
 
     # =================================================================
     # CENTRALIZED AVAILABILITY CHECK (root-cause fix)
@@ -487,6 +496,34 @@ class LocalLLM:
             age = now - cache["checked_at"]
             if age < AI_AVAILABILITY_CACHE_SECONDS:
                 return cache["available"], cache["reason"]
+
+        if IS_GROQ:
+            if not GROQ_API_KEY:
+                reason = "GROQ_API_KEY is not configured."
+                cache.update(available=False, reason=reason, checked_at=now)
+                return False, reason
+            try:
+                response = requests.get(
+                    f"{GROQ_BASE_URL}/models",
+                    headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                    timeout=10,
+                )
+                response.raise_for_status()
+                models = [item.get("id", "") for item in response.json().get("data", [])]
+            except requests.exceptions.RequestException as error:
+                reason = f"Could not reach Groq ({error})."
+                cache.update(available=False, reason=reason, checked_at=now)
+                return False, reason
+            except ValueError as error:
+                reason = f"Groq returned an unparseable response ({error})."
+                cache.update(available=False, reason=reason, checked_at=now)
+                return False, reason
+            if GROQ_MODEL not in models:
+                reason = f"Model '{GROQ_MODEL}' is not available from Groq."
+                cache.update(available=False, reason=reason, checked_at=now)
+                return False, reason
+            cache.update(available=True, reason=None, checked_at=now)
+            return True, None
 
         try:
             response = requests.get(
@@ -610,6 +647,62 @@ class LocalLLM:
                 "content": user_prompt,
             },
         ]
+
+        # Cloud production provider. Keep every agent prompt and every
+        # downstream parser unchanged; only the transport/model host changes.
+        if IS_GROQ:
+            if not GROQ_API_KEY:
+                print("[LLM] Groq call skipped: GROQ_API_KEY is not configured.")
+                return ""
+            try:
+                print(
+                    f"[LLM] Sending request to Groq (model={GROQ_MODEL}, "
+                    f"max_tokens={min(max_new_tokens, 16384)}, timeout={timeout}s)..."
+                )
+                response = requests.post(
+                    f"{GROQ_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {GROQ_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": GROQ_MODEL,
+                        "messages": messages,
+                        "temperature": max(float(temperature), 1e-8),
+                        "max_tokens": min(max_new_tokens, 16384),
+                        "response_format": {"type": "json_object"},
+                        "reasoning_effort": "none",
+                    },
+                    timeout=timeout,
+                )
+                if response.status_code != 200:
+                    print(
+                        f"[LLM] Non-200 from Groq: {response.status_code}. "
+                        f"Response body: {response.text[:500]!r}"
+                    )
+                response.raise_for_status()
+                data = response.json()
+                choices = data.get("choices") or []
+                if not choices:
+                    print("[LLM] Groq returned no choices.")
+                    return ""
+                message = choices[0].get("message") or {}
+                content = str(message.get("content", "") or "")
+                if not content:
+                    print("[LLM] Groq returned an empty message content.")
+                    return ""
+                return content
+            except requests.exceptions.RequestException as error:
+                print(f"[LLM] Groq call failed: {error}")
+                self._connectivity_failure_this_run = True
+                self._availability_cache.update(
+                    available=False, reason=f"Groq call failed: {error}",
+                    checked_at=_time.monotonic(),
+                )
+                return ""
+            except (ValueError, TypeError, KeyError) as error:
+                print(f"[LLM] Groq returned an unusable response: {error}")
+                return ""
 
         # The context window must fit BOTH the prompt tokens and the
         # requested output (num_predict). Without this, Ollama uses
