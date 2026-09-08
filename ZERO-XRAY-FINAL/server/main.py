@@ -1,4 +1,4 @@
-import base64
+﻿import base64
 import binascii
 import re
 from pathlib import Path
@@ -1014,7 +1014,7 @@ def analyze_service(
         future_steps = (redesign or {}).get("future_steps") or []
         journey_source = str((redesign or {}).get("analysis_source", "")).lower()
         current_steps = (result.get("service") or {}).get("steps") or service_payload.get("steps") or []
-        minimum_future_steps = 4 if len(current_steps) >= 5 else 2
+        minimum_future_steps = 3 if len(current_steps) >= 5 else 2
         quality_issues = []
         if journey_source != ai_label():
             quality_issues.append(
