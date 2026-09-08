@@ -1428,7 +1428,7 @@ Output ONLY this JSON object, "steps" first, at most 5 stages, 1 short sentence 
         # fixed seven-step template) and only rejects implausibly thin AI
         # output; genuine compact services with fewer than five current
         # steps remain allowed to produce two or three future stages.
-        minimum_future_steps = 4 if len(source_steps) >= 5 else 2
+        minimum_future_steps = 3 if len(source_steps) >= 5 else 2
         if len(future_steps) < minimum_future_steps:
             print(
                 "[AI QUALITY GATE] [JOURNEY] Rejected over-compressed "
