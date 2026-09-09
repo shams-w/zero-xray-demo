@@ -4,6 +4,15 @@ import { useLanguage } from "../i18n/useLanguage";
 import { getPublicService } from "../api";
 
 
+
+const DEMO_IDENTITY_PROFILES = [
+  { name: "Ahmed Al Mansoori", emirates_id: "784-1995-1234567-1", email: "ahmed.almansoori@demo.ae", phone: "+971 50 123 4567", address: "Dubai, United Arab Emirates" },
+  { name: "Fatima Al Nuaimi", emirates_id: "784-1998-7654321-2", email: "fatima.alnuaimi@demo.ae", phone: "+971 55 987 6543", address: "Abu Dhabi, United Arab Emirates" },
+  { name: "Omar Al Suwaidi", emirates_id: "784-1992-4567890-3", email: "omar.alsuwaidi@demo.ae", phone: "+971 52 555 7812", address: "Sharjah, United Arab Emirates" },
+  { name: "Mariam Al Mazrouei", emirates_id: "784-2000-3141592-4", email: "mariam.almazrouei@demo.ae", phone: "+971 54 321 9087", address: "Ajman, United Arab Emirates" },
+  { name: "Saeed Al Ketbi", emirates_id: "784-1990-2718281-5", email: "saeed.alketbi@demo.ae", phone: "+971 56 246 8135", address: "Al Ain, United Arab Emirates" },
+];
+
 const SERVICE_NAME_PAIRS = [
   {
     ar: "خدمة إرسال شحنة دولية",
@@ -192,6 +201,7 @@ export default function PublishedAgentPage({ tenantSlug, agentSlug }) {
   const [identityInput, setIdentityInput] = useState("");
   const [rememberIdentity, setRememberIdentity] = useState(true);
   const [confirmationCode, setConfirmationCode] = useState("49");
+  const [demoIdentity, setDemoIdentity] = useState(null);
   const publishedRootRef = useRef(null);
 
   useEffect(() => {
@@ -317,6 +327,11 @@ export default function PublishedAgentPage({ tenantSlug, agentSlug }) {
                   setConfirmationCode(
                     String(Math.floor(Math.random() * 90) + 10)
                   );
+                  setDemoIdentity(
+                    DEMO_IDENTITY_PROFILES[
+                      Math.floor(Math.random() * DEMO_IDENTITY_PROFILES.length)
+                    ]
+                  );
                   setIdentityStep("confirm");
                 }}
               >
@@ -434,6 +449,7 @@ export default function PublishedAgentPage({ tenantSlug, agentSlug }) {
           result={localizedResult}
           onBack={goHome}
           customerOnly
+          demoIdentity={demoIdentity}
         />
       </div>
 

@@ -923,6 +923,7 @@ function LiveAgentPage({
   onBack,
   customerOnly = false,
   onSessionStart,
+  demoIdentity = null,
 }) {
   const { lang } =
     useLanguage();
@@ -1105,11 +1106,13 @@ function LiveAgentPage({
     async function handleRegister() {
     const sandboxIdentity = {
       name:
-        lang === "ar"
+        demoIdentity?.name ||
+        (lang === "ar"
           ? "متعامل الهوية الرقمية"
-          : "UAE PASS Customer",
+          : "UAE PASS Customer"),
 
       email:
+        demoIdentity?.email ||
         `uae-pass-${Date.now()}@sandbox.invalid`,
 
       blueprint_id: result?.blueprint_id,
@@ -1965,6 +1968,21 @@ if (isCase) {
         <div className="live-agent-error">
           {error}
         </div>
+      )}
+
+      {customer && demoIdentity && (
+        <section className="live-focus-card compact-live-card">
+          <span className="live-card-kicker">
+            {lang === "ar" ? "تم التحقق من الهوية الرقمية" : "Digital Identity Verified"}
+          </span>
+          <h3>{demoIdentity.name}</h3>
+          <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
+            <div><strong>{lang === "ar" ? "رقم الهوية: " : "Emirates ID: "}</strong>{demoIdentity.emirates_id}</div>
+            <div><strong>{lang === "ar" ? "البريد الإلكتروني: " : "Email: "}</strong>{demoIdentity.email}</div>
+            <div><strong>{lang === "ar" ? "رقم الهاتف: " : "Mobile: "}</strong>{demoIdentity.phone}</div>
+            <div><strong>{lang === "ar" ? "العنوان: " : "Address: "}</strong>{demoIdentity.address}</div>
+          </div>
+        </section>
       )}
             {screen === "register" && (
         <section className="live-focus-card compact-live-card uae-pass-card">
