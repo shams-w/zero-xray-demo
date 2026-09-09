@@ -924,6 +924,7 @@ function LiveAgentPage({
   customerOnly = false,
   onSessionStart,
   demoIdentity = null,
+  onDemoIdentityChange,
 }) {
   const { lang } =
     useLanguage();
@@ -931,6 +932,14 @@ function LiveAgentPage({
   const copy =
     COPY[lang] ||
     COPY.en;
+
+  const [editingIdentity, setEditingIdentity] = useState(false);
+  const [identityDraft, setIdentityDraft] = useState(demoIdentity || {});
+
+  useEffect(() => {
+    setIdentityDraft(demoIdentity || {});
+    setEditingIdentity(false);
+  }, [demoIdentity]);
 
   const eventSourceRef =
     useRef(null);
@@ -1970,20 +1979,6 @@ if (isCase) {
         </div>
       )}
 
-      {customer && demoIdentity && (
-        <section className="live-focus-card compact-live-card">
-          <span className="live-card-kicker">
-            {lang === "ar" ? "تم التحقق من الهوية الرقمية" : "Digital Identity Verified"}
-          </span>
-          <h3>{demoIdentity.name}</h3>
-          <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
-            <div><strong>{lang === "ar" ? "رقم الهوية: " : "Emirates ID: "}</strong>{demoIdentity.emirates_id}</div>
-            <div><strong>{lang === "ar" ? "البريد الإلكتروني: " : "Email: "}</strong>{demoIdentity.email}</div>
-            <div><strong>{lang === "ar" ? "رقم الهاتف: " : "Mobile: "}</strong>{demoIdentity.phone}</div>
-            <div><strong>{lang === "ar" ? "العنوان: " : "Address: "}</strong>{demoIdentity.address}</div>
-          </div>
-        </section>
-      )}
             {screen === "register" && (
         <section className="live-focus-card compact-live-card uae-pass-card">
 
@@ -2922,6 +2917,93 @@ if (isCase) {
               {copy.customerReviewText}
             </p>
 
+
+
+            {customer && demoIdentity && (
+              <section className="live-focus-card compact-live-card">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                  <span className="live-card-kicker">
+                    {lang === "ar" ? "تم التحقق من الهوية الرقمية" : "Digital Identity Verified"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingIdentity((value) => !value)}
+                    style={{
+                      border: "1px solid #2563eb",
+                      borderRadius: "10px",
+                      padding: "7px 14px",
+                      background: editingIdentity ? "#eff6ff" : "white",
+                      color: "#1d4ed8",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {editingIdentity
+                      ? (lang === "ar" ? "إلغاء" : "Cancel")
+                      : (lang === "ar" ? "تعديل المعلومات" : "Edit information")}
+                  </button>
+                </div>
+
+                {!editingIdentity ? (
+                  <>
+                    <h3>{demoIdentity.name}</h3>
+                    <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
+                      <div><strong>{lang === "ar" ? "رقم الهوية: " : "Emirates ID: "}</strong>{demoIdentity.emirates_id}</div>
+                      <div><strong>{lang === "ar" ? "البريد الإلكتروني: " : "Email: "}</strong>{demoIdentity.email}</div>
+                      <div><strong>{lang === "ar" ? "رقم الهاتف: " : "Mobile: "}</strong>{demoIdentity.phone}</div>
+                      <div><strong>{lang === "ar" ? "العنوان: " : "Address: "}</strong>{demoIdentity.address}</div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ display: "grid", gap: "10px", marginTop: "14px" }}>
+                    {[
+                      ["name", lang === "ar" ? "الاسم" : "Name"],
+                      ["emirates_id", lang === "ar" ? "رقم الهوية" : "Emirates ID"],
+                      ["email", lang === "ar" ? "البريد الإلكتروني" : "Email"],
+                      ["phone", lang === "ar" ? "رقم الهاتف" : "Mobile"],
+                      ["address", lang === "ar" ? "العنوان" : "Address"],
+                    ].map(([key, label]) => (
+                      <label key={key} style={{ display: "grid", gap: "5px", fontWeight: 700 }}>
+                        <span>{label}</span>
+                        <input
+                          value={identityDraft?.[key] || ""}
+                          onChange={(event) =>
+                            setIdentityDraft((current) => ({ ...current, [key]: event.target.value }))
+                          }
+                          style={{
+                            width: "100%",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "10px",
+                            padding: "10px 12px",
+                            font: "inherit",
+                            background: "white",
+                          }}
+                        />
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onDemoIdentityChange?.(identityDraft);
+                        setEditingIdentity(false);
+                      }}
+                      style={{
+                        border: 0,
+                        borderRadius: "10px",
+                        padding: "10px 16px",
+                        background: "#2563eb",
+                        color: "white",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        justifySelf: lang === "ar" ? "end" : "start",
+                      }}
+                    >
+                      {lang === "ar" ? "حفظ المعلومات" : "Save information"}
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
 
             <div className="customer-service-receipt">
 
