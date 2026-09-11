@@ -109,8 +109,8 @@ class LiveApiExecutor:
         service_id,
     ):
         """
-        Find CONNECTED integrations that actually contain OpenAPI
-        GET operations for this exact service.
+        Find CONNECTED integrations that contain enabled GET operations
+        explicitly linked to this exact service.
         """
 
         integrations = self.catalog_store.list_integrations_for_tenant(
@@ -149,7 +149,55 @@ class LiveApiExecutor:
             matches.append({
                 "integration": integration,
                 "operations": read_operations,
+                "match_scope": "EXACT_SERVICE",
             })
+
+        return matches
+
+    def discover_tenant_read_operations(
+        self,
+        tenant_id,
+    ):
+        """
+        Tenant-scoped fallback discovery.
+
+        Used only when the published Blueprint's service_id does not have
+        usable OpenAPI reads. It never crosses tenant boundaries and still
+        considers CONNECTED integrations only.
+        """
+
+        matches = []
+
+        for integration in self.catalog_store.list_integrations_for_tenant(
+            tenant_id
+        ):
+            if str(integration.get("status") or "").upper() != "CONNECTED":
+                continue
+
+            integration_id = integration.get("id")
+            if not integration_id:
+                continue
+
+            operations = self.api_operation_store.list_operations_for_integration(
+                tenant_id,
+                integration_id,
+                service_id=None,
+            )
+
+            read_operations = [
+                operation
+                for operation in operations
+                if operation.get("enabled")
+                and str(operation.get("method") or "").upper() == "GET"
+                and operation.get("service_id")
+            ]
+
+            if read_operations:
+                matches.append({
+                    "integration": integration,
+                    "operations": read_operations,
+                    "match_scope": "TENANT_FALLBACK",
+                })
 
         return matches
 
@@ -164,6 +212,28 @@ class LiveApiExecutor:
             if len(token) >= 3
         }
 
+    @staticmethod
+    def _soft_word_overlap(left_words, right_words):
+        """
+        Count exact and conservative prefix matches such as
+        renew <-> renewal without fuzzy-matching unrelated words.
+        """
+        exact = left_words & right_words
+        score = len(exact) * 10
+
+        unmatched_left = left_words - exact
+        unmatched_right = right_words - exact
+
+        for left in unmatched_left:
+            for right in unmatched_right:
+                if len(left) >= 4 and len(right) >= 4:
+                    prefix = min(6, len(left), len(right))
+                    if left[:prefix] == right[:prefix]:
+                        score += 8
+                        break
+
+        return score
+
     def score_operation(
         self,
         operation,
@@ -173,8 +243,9 @@ class LiveApiExecutor:
         """
         Rank GET operations against the published service/customer intent.
 
-        service_id remains the hard security boundary.
-        Text scoring only ranks operations already belonging to that service.
+        This scoring never grants access. Tenant and CONNECTED-integration
+        checks happen before scoring; score only decides which already-safe
+        read operation is most relevant.
         """
 
         target_words = self._keywords(
@@ -191,7 +262,10 @@ class LiveApiExecutor:
 
         operation_words = self._keywords(searchable)
 
-        score = len(target_words & operation_words) * 10
+        score = self._soft_word_overlap(
+            target_words,
+            operation_words,
+        )
 
         searchable_lower = searchable.lower()
 
@@ -206,8 +280,12 @@ class LiveApiExecutor:
             "fees": 6,
             "package": 5,
             "packages": 5,
+            "bundle": 5,
+            "bundles": 5,
             "plan": 4,
             "plans": 4,
+            "renew": 5,
+            "renewal": 5,
             "service": 2,
             "catalog": 4,
             "catalogue": 4,
@@ -227,21 +305,38 @@ class LiveApiExecutor:
         *,
         service_name="",
         intent="",
-        limit=5,
+        limit=12,
     ):
         """
-        Automatically select the most relevant READ operations for
-        the published service.
+        Select relevant GET operations.
 
-        Does not execute anything.
+        1) Prefer operations explicitly linked to this service_id.
+        2) If none are available, safely fall back to other CONNECTED
+           OpenAPI operations inside the same tenant and match them by
+           service name / intent.
+
+        Tenant-wide fallback requires a meaningful textual match so an
+        unrelated API cannot be selected just because it has a generic
+        "details" or "fees" endpoint.
         """
 
         candidates = []
 
-        for match in self.discover_service_integrations(
+        exact_matches = self.discover_service_integrations(
             tenant_id,
             service_id,
-        ):
+        )
+
+        source_matches = exact_matches
+        using_fallback = False
+
+        if not exact_matches:
+            source_matches = self.discover_tenant_read_operations(
+                tenant_id
+            )
+            using_fallback = True
+
+        for match in source_matches:
             integration = match["integration"]
 
             for operation in match["operations"]:
@@ -251,9 +346,34 @@ class LiveApiExecutor:
                     intent=intent,
                 )
 
+                if using_fallback:
+                    operation_words = self._keywords(" ".join([
+                        str(operation.get("operation_id") or ""),
+                        str(operation.get("path") or ""),
+                        str(operation.get("summary") or ""),
+                        str(operation.get("description") or ""),
+                        " ".join(operation.get("tags") or []),
+                    ]))
+                    target_words = self._keywords(
+                        f"{service_name} {intent}"
+                    )
+                    semantic_match = self._soft_word_overlap(
+                        target_words,
+                        operation_words,
+                    )
+
+                    # Generic "details"/"fees" wording alone is not enough
+                    # for tenant-wide fallback. Require service-intent overlap.
+                    if semantic_match < 8:
+                        continue
+
                 candidates.append({
                     "integration_id": integration.get("id"),
                     "integration_name": integration.get("name"),
+                    "source_service_id": operation.get("service_id") or service_id,
+                    "match_scope": match.get("match_scope") or (
+                        "TENANT_FALLBACK" if using_fallback else "EXACT_SERVICE"
+                    ),
                     "score": score,
                     "operation": operation,
                 })
@@ -261,6 +381,7 @@ class LiveApiExecutor:
         candidates.sort(
             key=lambda item: (
                 item["score"],
+                1 if item.get("match_scope") == "EXACT_SERVICE" else 0,
                 str(
                     item["operation"].get("operation_id")
                     or item["operation"].get("path")
@@ -271,6 +392,124 @@ class LiveApiExecutor:
         )
 
         return candidates[: max(1, int(limit or 1))]
+
+    @staticmethod
+    def _normalized_parameter_name(value):
+        return re.sub(
+            r"[^a-z0-9]",
+            "",
+            str(value or "").lower(),
+        )
+
+    @classmethod
+    def _documented_parameter_value(cls, parameter):
+        """
+        Use only values explicitly documented by OpenAPI (example/default).
+        Never invent a required customer identifier.
+        """
+        if not isinstance(parameter, dict):
+            return None
+
+        if parameter.get("example") is not None:
+            return parameter.get("example")
+
+        schema = parameter.get("schema") or {}
+        if isinstance(schema, dict):
+            if schema.get("example") is not None:
+                return schema.get("example")
+            if schema.get("default") is not None:
+                return schema.get("default")
+
+        examples = parameter.get("examples")
+        if isinstance(examples, dict):
+            for example in examples.values():
+                if isinstance(example, dict) and example.get("value") is not None:
+                    return example.get("value")
+
+        return None
+
+    @classmethod
+    def extract_context_values(cls, payload):
+        """
+        Collect scalar values returned by prior safe GETs.
+
+        Values are keyed by their exact normalized response-field name and
+        are only reused when a later required parameter has the same name.
+        This allows safe read chaining such as BundleId -> charges without
+        guessing relationships between unrelated fields.
+        """
+        values = {}
+
+        def walk(value):
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    normalized = cls._normalized_parameter_name(key)
+                    if (
+                        normalized
+                        and isinstance(child, (str, int, float, bool))
+                        and child not in ("", None)
+                    ):
+                        values.setdefault(normalized, child)
+                    walk(child)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child)
+
+        walk(payload)
+        return values
+
+    @classmethod
+    def prepare_request_arguments(
+        cls,
+        operation,
+        known_values=None,
+    ):
+        """
+        Build path/query/header arguments from:
+        - documented OpenAPI examples/defaults, or
+        - exact-name values returned by an earlier GET.
+
+        Returns missing required parameter names instead of guessing.
+        """
+        known_values = known_values or {}
+        path_params = {}
+        query_params = {}
+        headers = {}
+        missing = []
+
+        for parameter in operation.get("parameters") or []:
+            if not isinstance(parameter, dict):
+                continue
+
+            name = str(parameter.get("name") or "").strip()
+            if not name:
+                continue
+
+            location = str(parameter.get("in") or "query").lower()
+            normalized = cls._normalized_parameter_name(name)
+
+            value = known_values.get(normalized)
+            if value is None:
+                value = cls._documented_parameter_value(parameter)
+
+            if value is None:
+                if parameter.get("required"):
+                    missing.append(name)
+                continue
+
+            if location == "path":
+                path_params[name] = value
+            elif location == "header":
+                headers[name] = str(value)
+            else:
+                query_params[name] = value
+
+        return {
+            "path_params": path_params,
+            "query_params": query_params,
+            "headers": headers,
+            "missing": missing,
+        }
 
     @staticmethod
     def _as_number(value):

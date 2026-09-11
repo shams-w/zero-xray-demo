@@ -2211,33 +2211,109 @@ def start_journey(request: JourneyStart, response: Response):
                     blueprint["service_id"],
                     service_name=blueprint.get("service_name", ""),
                     intent=request.intent,
-                    limit=5,
+                    limit=12,
                 )
 
                 live_results = []
+                known_values = {}
+                pending_candidates = []
 
+                print(
+                    "[LIVE API] service=",
+                    blueprint.get("service_name"),
+                    "service_id=",
+                    blueprint.get("service_id"),
+                    "candidates=",
+                    len(candidates),
+                )
+
+                # Pass 1: execute GETs whose required parameters are already
+                # available from OpenAPI examples/defaults.
                 for candidate in candidates:
                     operation = candidate["operation"]
+                    prepared = live_api_executor.prepare_request_arguments(
+                        operation,
+                        known_values=known_values,
+                    )
 
-                    required_parameters = [
-                        item
-                        for item in (operation.get("parameters") or [])
-                        if item.get("required")
-                    ]
-
-                    if required_parameters:
+                    if prepared["missing"]:
+                        pending_candidates.append(candidate)
+                        print(
+                            "[LIVE API] waiting for parameters",
+                            operation.get("operation_id") or operation.get("path"),
+                            prepared["missing"],
+                        )
                         continue
 
                     try:
                         result = live_api_executor.execute_get(
                             journey["tenant_id"],
-                            blueprint["service_id"],
+                            candidate["source_service_id"],
                             candidate["integration_id"],
                             operation,
+                            path_params=prepared["path_params"],
+                            query_params=prepared["query_params"],
+                            headers=prepared["headers"],
                         )
                         live_results.append(result)
-                    except LiveApiExecutionError:
+                        known_values.update(
+                            live_api_executor.extract_context_values(
+                                result.get("payload")
+                            )
+                        )
+                        print(
+                            "[LIVE API] GET OK",
+                            candidate.get("match_scope"),
+                            operation.get("operation_id") or operation.get("path"),
+                            result.get("status_code"),
+                        )
+                    except LiveApiExecutionError as error:
+                        print(
+                            "[LIVE API] GET skipped",
+                            operation.get("operation_id") or operation.get("path"),
+                            str(error),
+                        )
+
+                # Pass 2: retry parameterized GETs using exact-name values
+                # returned by successful reads from Pass 1.
+                for candidate in pending_candidates:
+                    operation = candidate["operation"]
+                    prepared = live_api_executor.prepare_request_arguments(
+                        operation,
+                        known_values=known_values,
+                    )
+
+                    if prepared["missing"]:
                         continue
+
+                    try:
+                        result = live_api_executor.execute_get(
+                            journey["tenant_id"],
+                            candidate["source_service_id"],
+                            candidate["integration_id"],
+                            operation,
+                            path_params=prepared["path_params"],
+                            query_params=prepared["query_params"],
+                            headers=prepared["headers"],
+                        )
+                        live_results.append(result)
+                        known_values.update(
+                            live_api_executor.extract_context_values(
+                                result.get("payload")
+                            )
+                        )
+                        print(
+                            "[LIVE API] chained GET OK",
+                            candidate.get("match_scope"),
+                            operation.get("operation_id") or operation.get("path"),
+                            result.get("status_code"),
+                        )
+                    except LiveApiExecutionError as error:
+                        print(
+                            "[LIVE API] chained GET skipped",
+                            operation.get("operation_id") or operation.get("path"),
+                            str(error),
+                        )
 
                 if live_results:
                     normalized = live_api_executor.normalize_results(live_results)
