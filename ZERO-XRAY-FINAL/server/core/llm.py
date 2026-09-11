@@ -653,7 +653,7 @@ class LocalLLM:
         messages = [
             {
                 "role": "system",
-                "content": system_prompt + "\nReturn the response as valid json.",
+                "content": system_prompt,
             },
             {
                 "role": "user",
