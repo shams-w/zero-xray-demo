@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../i18n/useLanguage";
 import { translateApiError } from "../i18n/apiErrors";
-import { approveBlueprint, getServiceContext, publishAgent, publishBlueprint } from "../api";
+import {
+  approveBlueprint,
+  getServiceContext,
+  publishAgent,
+  publishBlueprint,
+} from "../api";
 import { deriveCapabilitySummary } from "./agentCapabilitySummary";
 
 const COPY = {
@@ -36,7 +41,8 @@ const COPY = {
     agentId: "Agent ID",
     service: "Service",
     noItems: "UNKNOWN",
-    note: "Demo only. No external government system or payment gateway is executed.",
+    note:
+      "Demo only. No external government system or payment gateway is executed.",
     steps: [
       "Creating Service Schema",
       "Mapping Customer Decisions",
@@ -148,7 +154,9 @@ function deriveConfig(result) {
   ];
 
   knownDocs.forEach(([needle, label]) => {
-    if (source.includes(needle)) documents.push(label);
+    if (source.includes(needle)) {
+      documents.push(label);
+    }
   });
 
   const tools = uniq(integrations);
@@ -237,11 +245,6 @@ export default function BuildAgentPage({
     [result]
   );
 
-  // PHASE 3: Build Agent capability/readiness summary, derived entirely
-  // from the Phase 2 `agent_capability_map.summary` already attached to
-  // `result` by /api/analyze. null for legacy results that predate
-  // Phase 2 -- the summary section is hidden in that case, never shown
-  // as misleading zeros.
   const capabilitySummary = useMemo(
     () => deriveCapabilitySummary(result),
     [result]
@@ -282,25 +285,15 @@ export default function BuildAgentPage({
     setBuilt(true);
   }
 
-  // Publishing is backend-persisted (POST /api/agents/publish), not
-  // localStorage: the resulting public URL survives a refresh and
-  // works from another browser/device, because it's served from
-  // GET /service/{tenantSlug}/{agentSlug} on the server, not read
-  // back out of this browser's storage.
   async function publish() {
     if (!result?.blueprint_id || publishing) return;
 
-    // SERVICE LINK GUARD:
-    // Building and testing the Agent remain available,
-    // but the service cannot be published until at least
-    // one real integration is CONNECTED.
     const hasConnectedApi =
       serviceContext?.integrations?.some(
         (integration) =>
-          String(
-            integration?.status || ""
-          ).toUpperCase() === "CONNECTED"
-      );
+          String(integration?.status || "").toUpperCase() === "CONNECTED"
+      ) ||
+      Number(capabilitySummary?.connected_apis || 0) > 0;
 
     if (!hasConnectedApi) {
       setPublishError(
@@ -318,32 +311,10 @@ export default function BuildAgentPage({
     try {
       let agent;
 
-      // ROOT-CAUSE FIX (duplicate /api/agents/publish -> 409 then
-      // success): this used to ALWAYS call publishAgent() first and use
-      // the resulting failure as control flow. For the normal case --
-      // a freshly analysed Blueprint, which is DRAFT -- that first call
-      // could never succeed, because the backend requires a PUBLISHED
-      // Blueprint before its Agent can be published. So every ordinary
-      // publish produced a guaranteed rejected request, then ran the
-      // approve -> publish -> publishAgent sequence that was needed all
-      // along. The 409 was not an error condition being handled; it was
-      // a known, predictable state being discovered the expensive way.
-      //
-      // The Blueprint's status is already known here (the analyze
-      // response carries blueprint_status, and App.jsx keeps it current
-      // after any publish), so the correct sequence is chosen up front
-      // and the wasted request is never sent. Backend behaviour and
-      // permissions are untouched -- every step is still an
-      // authenticated API call and the DRAFT -> APPROVED -> PUBLISHED
-      // approval gate is still enforced server-side.
-
       if (result.blueprint_status !== "PUBLISHED") {
         try {
           await approveBlueprint(result.blueprint_id);
         } catch (approveError) {
-          // An already-approved Blueprint legitimately rejects a
-          // duplicate approval transition; publishing below is the
-          // authoritative next step, so only rethrow unrelated failures.
           if (
             !/approved|published|transition/i.test(
               approveError?.message || ""
@@ -398,10 +369,9 @@ export default function BuildAgentPage({
 
     setCopied(true);
 
-    setTimeout(
-      () => setCopied(false),
-      1800
-    );
+    setTimeout(() => {
+      setCopied(false);
+    }, 1800);
   }
 
   function openPublished() {
@@ -430,14 +400,8 @@ export default function BuildAgentPage({
     color: "#fff",
     fontSize: "18px",
     fontWeight: 800,
-    letterSpacing:
-      lang === "ar"
-        ? "0"
-        : ".02em",
-    cursor:
-      building
-        ? "wait"
-        : "pointer",
+    letterSpacing: lang === "ar" ? "0" : ".02em",
+    cursor: building ? "wait" : "pointer",
     boxShadow:
       "0 14px 34px rgba(91, 70, 255, .28), inset 0 1px 0 rgba(255,255,255,.22)",
     transition:
@@ -445,8 +409,7 @@ export default function BuildAgentPage({
   };
 
   const testButtonStyle = {
-    border:
-      "1px solid rgba(104,71,255,.22)",
+    border: "1px solid rgba(104,71,255,.22)",
     borderRadius: "16px",
     padding: "14px 24px",
     background:
@@ -536,46 +499,36 @@ export default function BuildAgentPage({
           </div>
 
           <div className="ab-steps">
-            {copy.steps.map(
-              (step, i) => (
-                <div
-                  className={`ab-step ${
-                    i < doneCount
-                      ? "done"
-                      : i === doneCount &&
-                        building
-                      ? "active"
-                      : ""
-                  }`}
-                  key={step}
-                >
-                  <span>
-                    {i < doneCount
-                      ? "✓"
-                      : String(
-                          i + 1
-                        ).padStart(
-                          2,
-                          "0"
-                        )}
-                  </span>
+            {copy.steps.map((step, i) => (
+              <div
+                className={`ab-step ${
+                  i < doneCount
+                    ? "done"
+                    : i === doneCount && building
+                    ? "active"
+                    : ""
+                }`}
+                key={step}
+              >
+                <span>
+                  {i < doneCount
+                    ? "✓"
+                    : String(i + 1).padStart(2, "0")}
+                </span>
 
-                  <strong>
-                    {step}
-                  </strong>
+                <strong>
+                  {step}
+                </strong>
 
-                  <em>
-                    {i < doneCount
-                      ? "Complete"
-                      : i ===
-                            doneCount &&
-                          building
-                      ? "Processing..."
-                      : "Queued"}
-                  </em>
-                </div>
-              )
-            )}
+                <em>
+                  {i < doneCount
+                    ? "Complete"
+                    : i === doneCount && building
+                    ? "Processing..."
+                    : "Queued"}
+                </em>
+              </div>
+            ))}
           </div>
         </section>
       )}
@@ -640,33 +593,25 @@ export default function BuildAgentPage({
             <div className="ab-grid">
               <Info
                 title={copy.decisions}
-                items={
-                  config.customer_decisions
-                }
+                items={config.customer_decisions}
                 empty={copy.noItems}
               />
 
               <Info
                 title={copy.documents}
-                items={
-                  config.required_documents
-                }
+                items={config.required_documents}
                 empty={copy.noItems}
               />
 
               <Info
                 title={copy.actions}
-                items={
-                  config.agent_actions
-                }
+                items={config.agent_actions}
                 empty={copy.noItems}
               />
 
               <Info
                 title={copy.consent}
-                items={
-                  config.consent_points
-                }
+                items={config.consent_points}
                 empty={copy.noItems}
               />
             </div>
@@ -676,110 +621,79 @@ export default function BuildAgentPage({
                 {copy.integrations}
               </h4>
 
-              {serviceContext
-                ?.integrations
-                ?.length
-                ? serviceContext.integrations.map(
-                    (tool) => (
-                      <div key={tool.id}>
-                        <strong>
-                          {tool.name}
-                        </strong>
+              {serviceContext?.integrations?.length ? (
+                serviceContext.integrations.map((tool) => (
+                  <div key={tool.id}>
+                    <strong>
+                      {tool.name}
+                    </strong>
 
-                        <span
-                          className={
-                            tool.status ===
-                            "CONNECTED"
-                              ? "connected"
-                              : tool.status ===
-                                "SANDBOX"
-                              ? "sandbox"
-                              : "required"
-                          }
-                        >
-                          {tool.status ===
-                          "CONNECTED"
-                            ? lang ===
-                              "ar"
-                              ? "متصل"
-                              : "Connected"
-                            : tool.status ===
-                              "SANDBOX"
-                            ? copy.sandbox
-                            : lang ===
-                              "ar"
-                            ? "تكامل مطلوب"
-                            : "Integration Required"}
-                        </span>
-                      </div>
-                    )
-                  )
-                : config
-                    .required_tools
-                    .length
-                ? config.required_tools.map(
-                    (tool, i) => (
-                      <div
-                        key={`${tool}-${i}`}
-                      >
-                        <strong>
-                          {tool}
-                        </strong>
+                    <span
+                      className={
+                        tool.status === "CONNECTED"
+                          ? "connected"
+                          : tool.status === "SANDBOX"
+                          ? "sandbox"
+                          : "required"
+                      }
+                    >
+                      {tool.status === "CONNECTED"
+                        ? lang === "ar"
+                          ? "متصل"
+                          : "Connected"
+                        : tool.status === "SANDBOX"
+                        ? copy.sandbox
+                        : lang === "ar"
+                        ? "تكامل مطلوب"
+                        : "Integration Required"}
+                    </span>
+                  </div>
+                ))
+              ) : config.required_tools.length ? (
+                config.required_tools.map((tool, i) => (
+                  <div key={`${tool}-${i}`}>
+                    <strong>
+                      {tool}
+                    </strong>
 
-                        <span className="required">
-                          {copy.required}
-                        </span>
-                      </div>
-                    )
-                  )
-                : (
-                  <p>
-                    {copy.noItems}
-                  </p>
-                )}
+                    <span className="required">
+                      {copy.required}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p>
+                  {copy.noItems}
+                </p>
+              )}
             </div>
 
             <div className="ab-stats">
               <span>
                 {copy.decisions}
                 <b>
-                  {
-                    config
-                      .customer_decisions
-                      .length
-                  }
+                  {config.customer_decisions.length}
                 </b>
               </span>
 
               <span>
                 {copy.actions}
                 <b>
-                  {
-                    config
-                      .agent_actions
-                      .length
-                  }
+                  {config.agent_actions.length}
                 </b>
               </span>
 
               <span>
                 {copy.documents}
                 <b>
-                  {
-                    config
-                      .required_documents
-                      .length
-                  }
+                  {config.required_documents.length}
                 </b>
               </span>
 
               <span>
                 {copy.unknown}
                 <b>
-                  {
-                    config
-                      .unknown_requirements
-                  }
+                  {config.unknown_requirements}
                 </b>
               </span>
             </div>
@@ -789,8 +703,7 @@ export default function BuildAgentPage({
                 <div className="ab-capability-summary">
                   <h4>
                     {
-                      t
-                        .buildAgentCapabilitySummary
+                      t.buildAgentCapabilitySummary
                         .title
                     }
                   </h4>
@@ -798,8 +711,7 @@ export default function BuildAgentPage({
                   <div className="ab-stats">
                     <span>
                       {
-                        t
-                          .buildAgentCapabilitySummary
+                        t.buildAgentCapabilitySummary
                           .usedDataSources
                       }
                       <b>
@@ -811,8 +723,7 @@ export default function BuildAgentPage({
 
                     <span>
                       {
-                        t
-                          .buildAgentCapabilitySummary
+                        t.buildAgentCapabilitySummary
                           .connectedApis
                       }
                       <b>
@@ -824,8 +735,7 @@ export default function BuildAgentPage({
 
                     <span>
                       {
-                        t
-                          .buildAgentCapabilitySummary
+                        t.buildAgentCapabilitySummary
                           .automatedSteps
                       }
                       <b>
@@ -841,8 +751,7 @@ export default function BuildAgentPage({
 
                     <span>
                       {
-                        t
-                          .buildAgentCapabilitySummary
+                        t.buildAgentCapabilitySummary
                           .customerSteps
                       }
                       <b>
@@ -854,8 +763,7 @@ export default function BuildAgentPage({
 
                     <span>
                       {
-                        t
-                          .buildAgentCapabilitySummary
+                        t.buildAgentCapabilitySummary
                           .manualSteps
                       }
                       <b>
@@ -867,8 +775,7 @@ export default function BuildAgentPage({
 
                     <span>
                       {
-                        t
-                          .buildAgentCapabilitySummary
+                        t.buildAgentCapabilitySummary
                           .integrationRequired
                       }
                       <b>
@@ -889,9 +796,7 @@ export default function BuildAgentPage({
               <button
                 className="ab-secondary"
                 onClick={() =>
-                  setShowConfig(
-                    (v) => !v
-                  )
+                  setShowConfig((v) => !v)
                 }
                 type="button"
               >
@@ -913,9 +818,7 @@ export default function BuildAgentPage({
                 className="ab-secondary"
                 onClick={publish}
                 type="button"
-                style={
-                  publishButtonStyle
-                }
+                style={publishButtonStyle}
                 disabled={publishing}
               >
                 {publishing
@@ -969,9 +872,7 @@ export default function BuildAgentPage({
                 </button>
 
                 <button
-                  onClick={
-                    openPublished
-                  }
+                  onClick={openPublished}
                   type="button"
                 >
                   {copy.open}
@@ -993,7 +894,9 @@ function Info({
   return (
     <article className="ab-info">
       <div>
-        <h4>{title}</h4>
+        <h4>
+          {title}
+        </h4>
 
         <b>
           {items.length}
@@ -1005,9 +908,7 @@ function Info({
           {items
             .slice(0, 8)
             .map((x, i) => (
-              <li
-                key={`${x}-${i}`}
-              >
+              <li key={`${x}-${i}`}>
                 {x}
               </li>
             ))}
