@@ -1,4 +1,4 @@
-﻿import base64
+import base64
 import binascii
 import re
 from pathlib import Path
@@ -67,6 +67,7 @@ from core.agent_capability_mapper import build_agent_capability_map
 from core.agent_comparison import build_zero_xray_comparison_profile, build_external_agent_profile, build_comparison_readiness
 from core.comparison_store import ComparisonStore
 from core.api_operation_store import ApiOperationStore
+from core.live_api_executor import LiveApiExecutor, LiveApiExecutionError
 from core.openapi_importer import fetch_and_parse, OpenApiImportError
 from core.url_safety import UnsafeUrlError
 from core.data_paths import get_tenant_files_root, get_data_root
@@ -226,6 +227,7 @@ monitoring_schedule_store = MonitoringScheduleStore(database_path=runtime_store.
 # profile is always derived fresh from the Blueprint, never stored here.
 comparison_store = ComparisonStore(database_path=runtime_store.database_path)
 api_operation_store = ApiOperationStore(database_path=runtime_store.database_path)
+live_api_executor = LiveApiExecutor(api_operation_store, catalog_store)
 notification_provider = get_notification_provider()
 monitoring_scheduler = None
 
@@ -2196,6 +2198,223 @@ def start_journey(request: JourneyStart, response: Response):
             lang=request.lang,
             sandbox=request.sandbox,
         )
+
+        blueprint = runtime_store.get_blueprint_for_tenant(
+            journey["blueprint_id"],
+            journey["tenant_id"],
+        )
+
+        if blueprint and blueprint.get("service_id"):
+            try:
+                candidates = live_api_executor.select_read_operations(
+                    journey["tenant_id"],
+                    blueprint["service_id"],
+                    service_name=blueprint.get("service_name", ""),
+                    intent=request.intent,
+                    limit=5,
+                )
+
+                live_results = []
+
+                for candidate in candidates:
+                    operation = candidate["operation"]
+
+                    required_parameters = [
+                        item
+                        for item in (operation.get("parameters") or [])
+                        if item.get("required")
+                    ]
+
+                    if required_parameters:
+                        continue
+
+                    try:
+                        result = live_api_executor.execute_get(
+                            journey["tenant_id"],
+                            blueprint["service_id"],
+                            candidate["integration_id"],
+                            operation,
+                        )
+                        live_results.append(result)
+                    except LiveApiExecutionError:
+                        continue
+
+                if live_results:
+                    normalized = live_api_executor.normalize_results(live_results)
+                    plan = dict(journey.get("plan") or {})
+                    edit_options = dict(plan.get("edit_options") or {})
+
+                    duration_years = []
+                    for raw_duration in normalized.get("durations") or []:
+                        text = str(raw_duration or "").strip().lower()
+                        years = None
+
+                        if re.fullmatch(r"\d+", text):
+                            years = int(text)
+                        else:
+                            year_match = re.search(r"(\d+)\s*(?:year|years|yr|yrs)", text)
+                            month_match = re.search(r"(\d+)\s*(?:month|months|mo|mos)", text)
+
+                            if year_match:
+                                years = int(year_match.group(1))
+                            elif month_match:
+                                months = int(month_match.group(1))
+                                if months > 0 and months % 12 == 0:
+                                    years = months // 12
+
+                        if years and years > 0 and years not in duration_years:
+                            duration_years.append(years)
+
+                    package_period = (
+                        "YEAR"
+                        if duration_years or edit_options.get("contract_durations")
+                        else "ONCE"
+                    )
+
+                    api_packages = []
+                    for index, item in enumerate(
+                        normalized.get("packages") or [],
+                        start=1,
+                    ):
+                        name = str(item.get("name") or f"Option {index}").strip()
+                        package_id = re.sub(
+                            r"[^a-z0-9]+",
+                            "-",
+                            name.lower(),
+                        ).strip("-") or f"api-option-{index}"
+
+                        api_packages.append({
+                            "id": package_id,
+                            "name": name,
+                            "price_per_year": item.get("price"),
+                            "billing_period": package_period,
+                            "source": "LIVE_API",
+                        })
+
+                    api_add_ons = []
+                    for index, item in enumerate(
+                        normalized.get("add_ons") or [],
+                        start=1,
+                    ):
+                        name = str(item.get("name") or f"Add-on {index}").strip()
+                        add_on_id = re.sub(
+                            r"[^a-z0-9]+",
+                            "-",
+                            name.lower(),
+                        ).strip("-") or f"api-addon-{index}"
+
+                        api_add_ons.append({
+                            "id": add_on_id,
+                            "name": name,
+                            "unit_price": item.get("price"),
+                            "billing_period": "ONCE",
+                            "default_quantity": 0,
+                            "source": "LIVE_API",
+                        })
+
+                    api_fees = []
+                    for index, item in enumerate(
+                        normalized.get("fees") or [],
+                        start=1,
+                    ):
+                        name = str(item.get("name") or f"Fee {index}").strip()
+                        fee_id = re.sub(
+                            r"[^a-z0-9]+",
+                            "-",
+                            name.lower(),
+                        ).strip("-") or f"api-fee-{index}"
+
+                        api_fees.append({
+                            "id": fee_id,
+                            "name": name,
+                            "unit_price": item.get("price"),
+                            "billing_period": "ONCE",
+                            "source": "LIVE_API",
+                        })
+
+                    if api_packages:
+                        edit_options["packages"] = api_packages
+
+                    if duration_years:
+                        edit_options["contract_durations"] = duration_years
+
+                    if api_add_ons:
+                        edit_options["add_ons"] = api_add_ons
+
+                    if api_fees:
+                        edit_options["one_time_fees"] = api_fees
+
+                    currency = normalized.get("currency") or "AED"
+                    edit_options["currency"] = currency
+                    edit_options["catalog_source"] = "LIVE_API"
+
+                    priced_packages = [
+                        item
+                        for item in api_packages
+                        if item.get("price_per_year") is not None
+                    ]
+                    priced_fees = [
+                        item
+                        for item in api_fees
+                        if item.get("unit_price") is not None
+                    ]
+
+                    live_amount = None
+                    if priced_packages:
+                        live_amount = float(priced_packages[0]["price_per_year"])
+                    elif priced_fees:
+                        live_amount = sum(
+                            float(item["unit_price"])
+                            for item in priced_fees
+                        )
+
+                    if api_packages or api_add_ons or api_fees:
+                        edit_options["mode"] = "PAYMENT"
+
+                    plan["edit_options"] = edit_options
+
+                    if api_packages:
+                        plan["selected_package_id"] = api_packages[0]["id"]
+                        plan["selected_package_name"] = api_packages[0]["name"]
+
+                    if duration_years:
+                        plan["contract_years"] = duration_years[0]
+
+                    if live_amount is not None:
+                        plan["requires_payment"] = True
+                        plan["payment_context"] = "REQUIRED"
+                        plan["fee_amount"] = live_amount
+                        plan["total_fee"] = live_amount
+                        plan["fee_currency"] = currency
+                        plan["fee_status"] = "REQUIRED"
+                        plan["fee_source"] = "Live connected API"
+                        plan["fee_display"] = f"{currency} {live_amount:,.2f}"
+
+                    plan["live_api"] = {
+                        "status": "CONNECTED",
+                        "source": "OPENAPI",
+                        "catalog": normalized,
+                        "operations": [
+                            {
+                                "integration_id": result.get("integration_id"),
+                                "operation_id": result.get("operation_id"),
+                                "method": result.get("method"),
+                                "path": result.get("path"),
+                                "status_code": result.get("status_code"),
+                            }
+                            for result in live_results
+                        ],
+                    }
+
+                    journey = runtime_store.apply_live_plan_enrichment(
+                        journey["id"],
+                        journey["tenant_id"],
+                        plan,
+                    )
+
+            except LiveApiExecutionError:
+                pass
+
         raw_token, expires_at = runtime_store.issue_journey_capability(
             journey["id"], journey["customer_id"]
         )

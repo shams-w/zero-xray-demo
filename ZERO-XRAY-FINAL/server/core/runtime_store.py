@@ -1326,6 +1326,42 @@ class RuntimeStore:
         elsewhere -- for authenticated staff endpoints where a
         cross-tenant ID guess must always come back as None/404."""
         return self.get_journey(journey_id, tenant_id=tenant_id)
+    def apply_live_plan_enrichment(self, journey_id, tenant_id, plan):
+        journey = self.get_journey(journey_id, tenant_id=tenant_id)
+
+        if not journey:
+            raise ValueError("Journey was not found.")
+
+        if journey["state"] not in {"PLAN_READY", "PLAN_EDITED"}:
+            raise ValueError(
+                "Live API data cannot update the plan in its current state."
+            )
+
+        with self._connect() as connection:
+            connection.execute(
+                """
+                UPDATE journeys
+                SET plan_json = ?, updated_at = ?
+                WHERE id = ? AND tenant_id = ?
+                """,
+                (
+                    _json(plan),
+                    _now(),
+                    journey_id,
+                    tenant_id,
+                ),
+            )
+
+            self._audit(
+                connection,
+                "journey",
+                journey_id,
+                "LIVE_API_PLAN_ENRICHED",
+                {"plan_version": journey["plan_version"]},
+                tenant_id=tenant_id,
+            )
+
+        return self.get_journey(journey_id, tenant_id=tenant_id)
 
     def edit_plan(self, journey_id, instruction="", selections=None, tenant_id=None):
         journey = self.get_journey(journey_id, tenant_id=tenant_id)
