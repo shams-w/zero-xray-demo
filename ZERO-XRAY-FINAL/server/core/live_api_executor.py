@@ -459,6 +459,34 @@ class LiveApiExecutor:
         return values
 
     @classmethod
+    def _demo_parameter_value(cls, parameter):
+        """
+        Temporary SANDBOX-only placeholders for identity-bound READ calls.
+
+        These values are intentionally synthetic and must never be presented
+        as verified customer data. They exist only so the staging demo can
+        continue until UAE PASS / authoritative identity data is connected.
+        """
+        if not isinstance(parameter, dict):
+            return None
+
+        name = cls._normalized_parameter_name(parameter.get("name"))
+
+        demo_values = {
+            "boxnumber": 123456,
+            "emiratecode": "DXB",
+            "ischangesubscriptiononly": False,
+            "resellerid": "WEB",
+            "apiversion": "1.0",
+            "language": "en",
+            "lang": "en",
+            "channel": "WEB",
+            "requestsource": "Web",
+        }
+
+        return demo_values.get(name)
+
+    @classmethod
     def prepare_request_arguments(
         cls,
         operation,
@@ -491,6 +519,9 @@ class LiveApiExecutor:
             value = known_values.get(normalized)
             if value is None:
                 value = cls._documented_parameter_value(parameter)
+
+            if value is None and parameter.get("required"):
+                value = cls._demo_parameter_value(parameter)
 
             if value is None:
                 if parameter.get("required"):

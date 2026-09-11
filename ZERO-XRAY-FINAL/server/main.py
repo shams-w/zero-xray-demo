@@ -2469,6 +2469,11 @@ def start_journey(request: JourneyStart, response: Response):
                     plan["live_api"] = {
                         "status": "CONNECTED",
                         "source": "OPENAPI",
+                        "identity_mode": "DEMO_PLACEHOLDER",
+                        "identity_note": (
+                            "Temporary sandbox values are being used until UAE PASS "
+                            "or another authoritative identity source is connected."
+                        ),
                         "catalog": normalized,
                         "operations": [
                             {
@@ -2481,6 +2486,35 @@ def start_journey(request: JourneyStart, response: Response):
                             for result in live_results
                         ],
                     }
+
+                    journey = runtime_store.apply_live_plan_enrichment(
+                        journey["id"],
+                        journey["tenant_id"],
+                        plan,
+                    )
+
+                elif candidates:
+                    plan = dict(journey.get("plan") or {})
+                    plan["live_api"] = {
+                        "status": "WAITING_FOR_AUTHORITATIVE_DATA",
+                        "source": "OPENAPI",
+                        "identity_mode": "DEMO_PLACEHOLDER",
+                        "identity_note": (
+                            "The matching API was found, but authoritative customer "
+                            "identity/account data is still required for a real quote."
+                        ),
+                    }
+
+                    if not plan.get("fee_amount"):
+                        plan["fee_amount"] = None
+                        plan["total_fee"] = None
+                        plan["fee_status"] = "PENDING_IDENTITY"
+                        plan["fee_source"] = "CONNECTED_API_PENDING_IDENTITY"
+                        plan["fee_display"] = "Price available after identity verification"
+                        plan["recommended_option"] = (
+                            "The agent matched the live renewal API. Final package and "
+                            "price will be retrieved automatically after UAE PASS is connected."
+                        )
 
                     journey = runtime_store.apply_live_plan_enrichment(
                         journey["id"],
