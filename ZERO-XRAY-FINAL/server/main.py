@@ -2620,6 +2620,145 @@ def start_journey(request: JourneyStart, response: Response):
             except LiveApiExecutionError:
                 pass
 
+        # DEMO ONLY: until UAE PASS / authoritative customer history is connected,
+        # pre-select a plausible plan from a synthetic customer-history profile.
+        # This keeps the published agent outcome-first without claiming the demo
+        # profile is verified customer data.
+        if request.sandbox:
+            plan = dict(journey.get("plan") or {})
+            pricing = dict(plan.get("edit_options") or {})
+            packages = pricing.get("packages") or []
+            service_text = " ".join([
+                str(plan.get("service_name") or ""),
+                str(request.intent or ""),
+            ]).lower()
+
+            selected_package = None
+            selected_years = 1
+            history_reason = None
+
+            if packages and pricing.get("mode") == "PAYMENT":
+                is_personal_po_box = (
+                    ("personal" in service_text or "individual" in service_text)
+                    and (
+                        "p.o. box" in service_text
+                        or "po box" in service_text
+                        or "pobox" in service_text
+                    )
+                )
+                is_corporate_po_box = (
+                    "corporate" in service_text
+                    and (
+                        "p.o. box" in service_text
+                        or "po box" in service_text
+                        or "pobox" in service_text
+                    )
+                )
+
+                if is_personal_po_box:
+                    selected_package = next(
+                        (
+                            item for item in packages
+                            if str(item.get("name") or "").strip().lower() == "myhome"
+                        ),
+                        packages[0],
+                    )
+                    selected_years = 2
+                    history_reason = (
+                        "Demo customer history indicates regular home delivery usage "
+                        "and a preference for a two-year renewal cycle, so MyHome for "
+                        "2 years is pre-selected."
+                    )
+                elif is_corporate_po_box:
+                    selected_package = next(
+                        (
+                            item for item in packages
+                            if str(item.get("name") or "").strip().lower() == "basic"
+                        ),
+                        packages[0],
+                    )
+                    selected_years = 1
+                    history_reason = (
+                        "Demo company history indicates standard mailbox usage with no "
+                        "high-volume premium requirement, so Basic for 1 year is pre-selected."
+                    )
+
+            if selected_package is not None and history_reason:
+                allowed_durations = pricing.get("contract_durations") or []
+                if allowed_durations and selected_years not in allowed_durations:
+                    selected_years = int(allowed_durations[0])
+
+                unit_price = float(
+                    selected_package.get("price_per_year")
+                    if selected_package.get("price_per_year") is not None
+                    else selected_package.get("price")
+                    or selected_package.get("amount")
+                    or 0
+                )
+                multiplier = (
+                    selected_years
+                    if str(selected_package.get("billing_period") or "").upper() == "YEAR"
+                    else 1
+                )
+                package_subtotal = unit_price * multiplier
+
+                one_time_total = 0.0
+                for fee in pricing.get("one_time_fees") or []:
+                    if fee.get("mandatory", True):
+                        one_time_total += float(
+                            fee.get("amount")
+                            if fee.get("amount") is not None
+                            else fee.get("unit_price")
+                            or 0
+                        )
+
+                subtotal_before_tax = package_subtotal + one_time_total
+
+                tax_policy = pricing.get("tax") or {}
+                tax_amount = 0.0
+                if (
+                    str(tax_policy.get("status") or "").upper() == "CONFIRMED"
+                    and not tax_policy.get("included_in_displayed_prices")
+                ):
+                    tax_amount = subtotal_before_tax * (
+                        float(tax_policy.get("rate_percent") or 0) / 100.0
+                    )
+
+                total_fee = round(subtotal_before_tax + tax_amount, 2)
+
+                plan["selected_package_id"] = selected_package.get("id")
+                plan["selected_package_name"] = selected_package.get("name")
+                plan["contract_years"] = selected_years
+                plan["add_on_quantities"] = {}
+                plan["fee_amount"] = total_fee
+                plan["total_fee"] = total_fee
+                plan["fee_status"] = "DEMO_RECOMMENDATION"
+                plan["fee_source"] = "DEMO_CUSTOMER_HISTORY_UNTIL_UAE_PASS"
+                plan["fee_display"] = (
+                    f"{total_fee:,.2f} AED"
+                    if request.lang == "ar"
+                    else f"AED {total_fee:,.2f}"
+                )
+                plan["pricing_breakdown"] = {
+                    "package_subtotal": round(package_subtotal, 2),
+                    "one_time_fees_total": round(one_time_total, 2),
+                    "tax_amount": round(tax_amount, 2),
+                    "total": total_fee,
+                    "add_on_quantities": {},
+                }
+                plan["demo_customer_history"] = {
+                    "status": "DEMO_ONLY",
+                    "source": "Synthetic profile until UAE PASS is connected",
+                    "recommendation_reason": history_reason,
+                }
+                plan["recommended_option"] = history_reason
+
+                journey = runtime_store.apply_live_plan_enrichment(
+                    journey["id"],
+                    journey["tenant_id"],
+                    plan,
+                )
+
         raw_token, expires_at = runtime_store.issue_journey_capability(
             journey["id"], journey["customer_id"]
         )
