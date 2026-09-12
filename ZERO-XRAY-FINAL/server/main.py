@@ -2493,28 +2493,94 @@ def start_journey(request: JourneyStart, response: Response):
                         plan,
                     )
 
-                elif candidates:
+                else:
                     plan = dict(journey.get("plan") or {})
-                    plan["live_api"] = {
-                        "status": "WAITING_FOR_AUTHORITATIVE_DATA",
-                        "source": "OPENAPI",
-                        "identity_mode": "DEMO_PLACEHOLDER",
-                        "identity_note": (
-                            "The matching API was found, but authoritative customer "
-                            "identity/account data is still required for a real quote."
-                        ),
-                    }
+                    edit_options = dict(plan.get("edit_options") or {})
 
-                    if not plan.get("fee_amount"):
+                    service_text = " ".join([
+                        str(blueprint.get("service_name") or ""),
+                        str((blueprint.get("service") or {}).get("name") or ""),
+                        str((blueprint.get("service") or {}).get("service_name") or ""),
+                        str(request.intent or ""),
+                    ]).lower()
+
+                    is_corporate_po_box = (
+                        "corporate" in service_text
+                        and (
+                            "p.o. box" in service_text
+                            or "po box" in service_text
+                            or "pobox" in service_text
+                        )
+                    )
+
+                    if is_corporate_po_box:
+                        demo_packages = [
+                            {
+                                "id": "basic",
+                                "name": "Basic",
+                                "price_per_year": 995.0,
+                                "billing_period": "YEAR",
+                                "source": "DEMO_FALLBACK_UNTIL_IDENTITY",
+                            },
+                            {
+                                "id": "premium",
+                                "name": "Premium",
+                                "price_per_year": 2495.0,
+                                "billing_period": "YEAR",
+                                "source": "DEMO_FALLBACK_UNTIL_IDENTITY",
+                            },
+                            {
+                                "id": "premium-plus",
+                                "name": "Premium+",
+                                "price_per_year": 11995.0,
+                                "billing_period": "YEAR",
+                                "source": "DEMO_FALLBACK_UNTIL_IDENTITY",
+                            },
+                        ]
+
+                        edit_options["mode"] = "PAYMENT"
+                        edit_options["packages"] = demo_packages
+                        edit_options["contract_durations"] = [1, 2, 3, 5, 10]
+                        edit_options["currency"] = "AED"
+                        edit_options["catalog_source"] = "DEMO_UNTIL_IDENTITY"
+
+                        plan["edit_options"] = edit_options
+                        plan["selected_package_id"] = demo_packages[0]["id"]
+                        plan["selected_package_name"] = demo_packages[0]["name"]
+                        plan["contract_years"] = 1
+                        plan["requires_payment"] = True
+                        plan["payment_context"] = "REQUIRED"
+                        plan["fee_amount"] = demo_packages[0]["price_per_year"]
+                        plan["total_fee"] = demo_packages[0]["price_per_year"]
+                        plan["fee_currency"] = "AED"
+                        plan["fee_status"] = "DEMO_ESTIMATE"
+                        plan["fee_source"] = "Demo fallback until UAE PASS"
+                        plan["fee_display"] = "From AED 995.00"
+                        plan["recommended_option"] = (
+                            "Choose a package and duration. The live Emirates Post API "
+                            "will replace these temporary demo values automatically once "
+                            "authoritative identity/account data is connected."
+                        )
+                    else:
                         plan["fee_amount"] = None
                         plan["total_fee"] = None
                         plan["fee_status"] = "PENDING_IDENTITY"
                         plan["fee_source"] = "CONNECTED_API_PENDING_IDENTITY"
                         plan["fee_display"] = "Price available after identity verification"
                         plan["recommended_option"] = (
-                            "The agent matched the live renewal API. Final package and "
-                            "price will be retrieved automatically after UAE PASS is connected."
+                            "The agent matched the connected API. Final options and price "
+                            "will be retrieved automatically after identity verification."
                         )
+
+                    plan["live_api"] = {
+                        "status": "WAITING_FOR_AUTHORITATIVE_DATA",
+                        "source": "OPENAPI",
+                        "identity_mode": "DEMO_PLACEHOLDER",
+                        "identity_note": (
+                            "Temporary demo values are shown only until UAE PASS or "
+                            "another authoritative identity source is connected."
+                        ),
+                    }
 
                     journey = runtime_store.apply_live_plan_enrichment(
                         journey["id"],
