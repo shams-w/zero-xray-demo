@@ -1418,6 +1418,11 @@ class RuntimeStore:
                 plan["auto_renewal"] = bool(selections.get("auto_renewal", False))
                 plan["fee_amount"] = total_fee
                 plan["total_fee"] = total_fee
+                plan["fee_display"] = (
+                    f"{total_fee:,.2f} AED"
+                    if journey["lang"] == "ar"
+                    else f"AED {total_fee:,.2f}"
+                )
                 package_name = plan.get("selected_package_name") or (
                     "الخيار المحدد" if journey["lang"] == "ar" else "Selected option"
                 )
