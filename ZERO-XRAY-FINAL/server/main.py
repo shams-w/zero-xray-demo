@@ -2548,7 +2548,7 @@ def start_journey(request: JourneyStart, response: Response):
                             {
                                 "id": "registration-fee",
                                 "name": "Registration / service fee",
-                                "unit_price": 70.0,
+                                "amount": 70.0,
                                 "billing_period": "ONCE",
                                 "source": "DEMO_FALLBACK_UNTIL_API",
                             }
@@ -2567,7 +2567,7 @@ def start_journey(request: JourneyStart, response: Response):
 
                         edit_options["tax"] = {
                             "category": "tax",
-                            "status": "DEMO_UNTIL_API",
+                            "status": "CONFIRMED",
                             "rate_percent": 5.0,
                             "included_in_displayed_prices": False,
                             "label": "5% VAT",
