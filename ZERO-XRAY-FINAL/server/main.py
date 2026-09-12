@@ -2544,6 +2544,35 @@ def start_journey(request: JourneyStart, response: Response):
                         edit_options["currency"] = "AED"
                         edit_options["catalog_source"] = "DEMO_UNTIL_IDENTITY"
 
+                        edit_options["one_time_fees"] = [
+                            {
+                                "id": "registration-fee",
+                                "name": "Registration / service fee",
+                                "unit_price": 70.0,
+                                "billing_period": "ONCE",
+                                "source": "DEMO_FALLBACK_UNTIL_API",
+                            }
+                        ]
+
+                        edit_options["add_ons"] = [
+                            {
+                                "id": "additional-postal-agent",
+                                "name": "Additional postal agent",
+                                "unit_price": 100.0,
+                                "billing_period": "ONCE",
+                                "default_quantity": 0,
+                                "source": "DEMO_FALLBACK_UNTIL_API",
+                            }
+                        ]
+
+                        edit_options["tax"] = {
+                            "category": "tax",
+                            "status": "DEMO_UNTIL_API",
+                            "rate_percent": 5.0,
+                            "included_in_displayed_prices": False,
+                            "label": "5% VAT",
+                        }
+
                         plan["edit_options"] = edit_options
                         plan["selected_package_id"] = demo_packages[0]["id"]
                         plan["selected_package_name"] = demo_packages[0]["name"]
